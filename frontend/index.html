@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RVKS WEB — Poultry Farm Management System</title>
+  <meta name="description" content="RVKS WEB - Real-time Livestock Flock Monitoring, Feed Formulation & Production, Egg Sales, and Farm Accounting">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#064e3b">
+  <link rel="stylesheet" href="/css/index.css">
+  <!-- Chart.js for High Performance Canvas Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ==================== LOGIN VIEW ==================== -->
+  <div id="loginView" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; background: var(--bg-app);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 2.5rem; width: 100%; max-width: 440px; box-shadow: var(--card-shadow); text-align: center;">
+      <div style="width: 64px; height: 64px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--primary-600), var(--primary-400)); margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: var(--glow-primary);">
+        🐔
+      </div>
+      <h1 style="font-size: 1.8rem; margin-bottom: 0.25rem;">RVKS WEB</h1>
+      <p style="color: var(--amber-400); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2rem;">Poultry Farm Management System</p>
+      
+      <form id="formLogin" action="javascript:void(0);" onsubmit="event.preventDefault(); if(window.handleLogin) { window.handleLogin(event); } return false;" style="text-align: left;">
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="Enter username" value="admin" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" value="admin123" autocomplete="current-password" required onkeydown="if(event.key==='Enter'){event.preventDefault(); if(window.handleLogin) window.handleLogin(event);}">
+        </div>
+        <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="width: 100%; min-height: 50px; font-size: 1.05rem; margin-top: 1rem;">
+          Sign In to Farm Dashboard
+        </button>
+      </form>
+
+      <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem;">
+        <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="document.getElementById('loginUsername').value='admin'; document.getElementById('loginPassword').value='admin123';">
+          Owner (Admin)
+        </button>
+        <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="document.getElementById('loginUsername').value='worker1'; document.getElementById('loginPassword').value='worker123';">
+          Farm Worker
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION VIEW ==================== -->
+  <div id="appView" style="display: none; flex-direction: column; min-height: 100vh;">
+    
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <button id="mobileMenuBtn" class="btn btn-secondary btn-sm" style="display: none; padding: 0.4rem 0.6rem;">☰</button>
+        <div class="brand-logo-icon">🐔</div>
+        <div class="brand-info">
+          <h1>RVKS WEB</h1>
+          <span class="brand-subtitle">Poultry Farm Management System</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Offline / Online Sync Indicator -->
+        <div id="syncIndicator" class="sync-indicator online" title="Farm server synchronization status">
+          <span class="status-dot"></span>
+          <span>Online</span>
+        </div>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="Toggle Dark/Light Mode">🌓</button>
+
+        <!-- Current User Badge -->
+        <div class="user-badge">
+          <span id="currentUserName" style="font-weight: 600;">Admin</span>
+          <span id="currentUserRole" class="user-role-tag">Owner</span>
+        </div>
+
+        <button class="btn btn-secondary btn-sm" onclick="window.logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- App Container -->
+    <div class="app-container">
+      
+      <!-- Left Sidebar Navigation -->
+      <aside class="app-sidebar" id="appSidebar">
+        <div class="nav-section-title">Poultry Farm</div>
+        <ul class="nav-list">
+          <li><a class="nav-item active" data-view="dashboard"><span class="nav-icon">📊</span> Farm Dashboard</a></li>
+          <li><a class="nav-item" data-view="workers"><span class="nav-icon">👥</span> Workers</a></li>
+          <li><a class="nav-item" data-view="attendance"><span class="nav-icon">📅</span> Attendance</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="payments"><span class="nav-icon">💳</span> Worker Payments</a></li>
+          <li><a class="nav-item" data-view="batches"><span class="nav-icon">🐔</span> Birds & Batches</a></li>
+          <li><a class="nav-item" data-view="mortality"><span class="nav-icon">⚠️</span> Mortality</a></li>
+          <li><a class="nav-item" data-view="eggs"><span class="nav-icon">🥚</span> Egg Production</a></li>
+          <li><a class="nav-item" data-view="suppliers"><span class="nav-icon">🚚</span> Suppliers</a></li>
+          <li><a class="nav-item" data-view="raw-materials"><span class="nav-icon">🌾</span> Raw Materials</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="purchases"><span class="nav-icon">🛒</span> Material Purchases</a></li>
+          <li><a class="nav-item" data-view="feed-recipes"><span class="nav-icon">📜</span> Feed Recipes</a></li>
+          <li><a class="nav-item" data-view="feed-production"><span class="nav-icon">⚙️</span> Feed Production</a></li>
+          <li><a class="nav-item" data-view="feed-stock"><span class="nav-icon">📦</span> Feed Stock</a></li>
+          <li><a class="nav-item" data-view="feed-usage"><span class="nav-icon">🍽️</span> Feed Usage</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="expenses"><span class="nav-icon">💸</span> Farm Expenses</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="income"><span class="nav-icon">💰</span> Farm Income</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="reports"><span class="nav-icon">📈</span> Reports & Export</a></li>
+          <li class="admin-only"><a class="nav-item" data-view="audit"><span class="nav-icon">🛡️</span> Audit Trail</a></li>
+        </ul>
+      </aside>
+
+      <!-- Main Dynamic Content Workspace -->
+      <main class="app-content">
+
+        <!-- ==================== VIEW 1: FARM DASHBOARD ==================== -->
+        <section id="view-dashboard" class="view-section">
+          
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>📊</span> Farm Operational Dashboard</h2>
+              <p>Real-time livestock monitoring, feed reserves, production metrics, and financial balance.</p>
+            </div>
+          </div>
+
+          <!-- Alert Notifications Banner Area -->
+          <div id="dashboardAlerts" class="alerts-container"></div>
+
+          <!-- Section 4 & 42: Father Friendly Large Quick Actions Bar -->
+          <div class="quick-actions-bar">
+            <div class="quick-actions-header">
+              <h3><span>⚡</span> Quick Farm Actions (One-Click Forms)</h3>
+              <span style="font-size: 0.8rem; color: var(--text-dim);">Designed for fast on-site farm entry</span>
+            </div>
+            <div class="quick-buttons-grid">
+              <button class="btn-quick-action" data-open-modal="modalRecordMortality">
+                <span class="action-icon" style="color: var(--danger-500);">⚠️</span> Record Mortality
+              </button>
+              <button class="btn-quick-action" data-open-modal="modalRecordEggs">
+                <span class="action-icon" style="color: var(--amber-400);">🥚</span> Record Eggs
+              </button>
+              <button class="btn-quick-action" onclick="window.navigateTo('attendance')">
+                <span class="action-icon" style="color: var(--primary-400);">📅</span> Mark Attendance
+              </button>
+              <button class="btn-quick-action" data-open-modal="modalProduceFeed">
+                <span class="action-icon" style="color: #3b82f6;">⚙️</span> Produce Feed
+              </button>
+              <button class="btn-quick-action" data-open-modal="modalRecordFeedUsage">
+                <span class="action-icon" style="color: #10b981;">🍽️</span> Record Feed Usage
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalRecordPurchase">
+                <span class="action-icon" style="color: #8b5cf6;">🛒</span> Material Purchase
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalRecordPayment">
+                <span class="action-icon" style="color: #f59e0b;">💳</span> Record Payment
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalAddExpense">
+                <span class="action-icon" style="color: #ef4444;">💸</span> Add Expense
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalAddWorker">
+                <span class="action-icon" style="color: #6ee7b7;">👥</span> Add Worker
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalAddBatch">
+                <span class="action-icon" style="color: #fbbf24;">🏷️</span> Add Bird Batch
+              </button>
+              <button class="btn-quick-action admin-only" data-open-modal="modalAddSupplier">
+                <span class="action-icon" style="color: #38bdf8;">🚚</span> Add Supplier
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 3: BIRD SUMMARY CARDS -->
+          <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Flock Bird Populations (Live Database Count)</h3>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Total Flock</span><div class="kpi-icon">🐔</div></div>
+              <div class="kpi-value" id="kpiTotalBirds">0</div>
+              <div class="kpi-subtext">All active birds in farm sheds</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Total Chicks</span><div class="kpi-icon">🐣</div></div>
+              <div class="kpi-value" id="kpiChickBirds">0</div>
+              <div class="kpi-subtext">Young growing chick flock</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Total Layers</span><div class="kpi-icon">🪺</div></div>
+              <div class="kpi-value" id="kpiLayerBirds">0</div>
+              <div class="kpi-subtext">Commercial layer hens</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Total EDD Birds</span><div class="kpi-icon">🐓</div></div>
+              <div class="kpi-value" id="kpiEddBirds">0</div>
+              <div class="kpi-subtext highlight">High-yield EDD breeds</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">EDD Batch 1</span><div class="kpi-icon">1️⃣</div></div>
+              <div class="kpi-value" id="kpiEddBatch1">0</div>
+              <div class="kpi-subtext">Shed 1 - East</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">EDD Batch 2</span><div class="kpi-icon">2️⃣</div></div>
+              <div class="kpi-value" id="kpiEddBatch2">0</div>
+              <div class="kpi-subtext">Shed 2 - Central</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">EDD Batch 3</span><div class="kpi-icon">3️⃣</div></div>
+              <div class="kpi-value" id="kpiEddBatch3">0</div>
+              <div class="kpi-subtext">Shed 3 - West</div>
+            </div>
+          </div>
+
+          <!-- Section 3: OPERATIONS & INVENTORY SUMMARY CARDS -->
+          <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Operations & Inventory Summary</h3>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Workers Status Today</span><div class="kpi-icon">👥</div></div>
+              <div class="kpi-value"><span id="kpiPresentToday">0</span> <span style="font-size: 1.1rem; color: var(--text-dim);">/ <span id="kpiActiveWorkers">0</span> Active</span></div>
+              <div class="kpi-subtext">Absent: <span id="kpiAbsentToday" style="color: var(--danger-500); font-weight:700;">0</span> | Leave: <span id="kpiLeaveToday">0</span></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Pending Wages</span><div class="kpi-icon">💳</div></div>
+              <div class="kpi-value" id="kpiPendingPayments" style="color: var(--amber-400);">₹0</div>
+              <div class="kpi-subtext">Pending worker wage settlements</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Current Feed Stock</span><div class="kpi-icon">🌾</div></div>
+              <div class="kpi-value" id="kpiFeedStock">0 kg</div>
+              <div class="kpi-subtext">Today's Usage: <strong id="kpiTodayFeedUsage" style="color: var(--primary-300);">0 kg</strong></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Raw Material Stock</span><div class="kpi-icon">📦</div></div>
+              <div class="kpi-value" id="kpiRawMaterialStock">0 kg</div>
+              <div class="kpi-subtext">Today's Purchases: <strong id="kpiTodayPurchases">0 kg</strong></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header"><span class="kpi-title">Today's Eggs Collected</span><div class="kpi-icon">🥚</div></div>
+              <div class="kpi-value" id="kpiTodayEggs">0</div>
+              <div class="kpi-subtext">Week: <strong id="kpiWeekEggs">0</strong> | Month: <strong id="kpiMonthEggs">0</strong></div>
+            </div>
+            <div class="kpi-card admin-only">
+              <div class="kpi-card-header"><span class="kpi-title">Month Net Balance</span><div class="kpi-icon">💰</div></div>
+              <div class="kpi-value" id="kpiMonthNetBalance">₹0</div>
+              <div class="kpi-subtext">Expenses: <strong id="kpiMonthExpenses">₹0</strong></div>
+            </div>
+          </div>
+
+          <!-- Section 39: Farm Visual Analytics Charts Grid -->
+          <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Dynamic Analytics & Trends</h3>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-header"><span class="chart-title">🐔 Birds by Flock Type</span></div>
+              <div class="chart-container"><canvas id="chartBirdsByType"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-header"><span class="chart-title">🏷️ Birds by Shed Batch</span></div>
+              <div class="chart-container"><canvas id="chartBirdsByBatch"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-header"><span class="chart-title">🥚 Egg Production & Sales (14 Days)</span></div>
+              <div class="chart-container"><canvas id="chartEggTrend"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-header"><span class="chart-title">⚠️ Mortality Trend (14 Days)</span></div>
+              <div class="chart-container"><canvas id="chartMortalityTrend"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-header"><span class="chart-title">🌾 Feed Production vs Consumption</span></div>
+              <div class="chart-container"><canvas id="chartFeedComparison"></canvas></div>
+            </div>
+            <div class="chart-card admin-only">
+              <div class="chart-header"><span class="chart-title">💸 Expenses by Category (This Month)</span></div>
+              <div class="chart-container"><canvas id="chartExpensesByCat"></canvas></div>
+            </div>
+            <div class="chart-card admin-only">
+              <div class="chart-header"><span class="chart-title">📊 Income vs Expenses (Last 6 Months)</span></div>
+              <div class="chart-container"><canvas id="chartIncomeVsExpense"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Section 41: Recent Activities Feed -->
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h3 style="font-size: 1.15rem; font-weight: 700;">🕒 Recent Farm Activities & Audit Trail</h3>
+            </div>
+            <div id="recentActivitiesList" style="padding: 1rem 1.5rem;"></div>
+          </div>
+
+        </section>
+
+        <!-- ==================== VIEW 2: WORKERS ==================== -->
+        <section id="view-workers" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>👥</span> Worker Management</h2>
+              <p>Manage farm personnel, salary types, contact info, and active/inactive status.</p>
+            </div>
+            <button class="btn btn-primary admin-only" data-open-modal="modalAddWorker">+ Add Worker</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableWorkers">
+                <thead>
+                  <tr>
+                    <th>Worker ID</th>
+                    <th>Name</th>
+                    <th>Job Role</th>
+                    <th>Phone</th>
+                    <th>Salary</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 3: ATTENDANCE ==================== -->
+        <section id="view-attendance" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>📅</span> Daily Worker Attendance</h2>
+              <p>Select date and record daily attendance for all active farm workers.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <input type="date" id="attendanceDateFilter" class="form-control" style="width: auto;" onchange="window.navigateTo('attendance')">
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableAttendance">
+                <thead>
+                  <tr>
+                    <th>Worker ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: PAYMENTS ==================== -->
+        <section id="view-payments" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>💳</span> Worker Payroll Payments</h2>
+              <p>Record and monitor wages, salary history, and pending settlements.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalRecordPayment">+ Record Payment</button>
+          </div>
+
+          <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
+            <div class="kpi-card">
+              <div class="kpi-title">Total Wages Paid</div>
+              <div class="kpi-value" id="paymentsTotalPaid" style="color: var(--primary-400);">₹0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Total Pending Payments</div>
+              <div class="kpi-value" id="paymentsTotalPending" style="color: var(--amber-400);">₹0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Last Payment Settled</div>
+              <div class="kpi-value" id="paymentsLastDate" style="font-size: 1.4rem;">-</div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tablePayments">
+                <thead>
+                  <tr>
+                    <th>Payment ID</th>
+                    <th>Worker</th>
+                    <th>Salary Period</th>
+                    <th>Payment Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: BIRDS & BATCHES ==================== -->
+        <section id="view-batches" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🐔</span> Birds & Batch Management</h2>
+              <p>Flock populations (Chicks, Layers, EDD Batches 1, 2, 3+) and shed allocations.</p>
+            </div>
+            <button class="btn btn-primary admin-only" data-open-modal="modalAddBatch">+ Add Bird Batch</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableBatches">
+                <thead>
+                  <tr>
+                    <th>Batch Code</th>
+                    <th>Batch Name</th>
+                    <th>Type</th>
+                    <th>Arrival Date</th>
+                    <th>Initial Qty</th>
+                    <th>Current Birds</th>
+                    <th>Shed Location</th>
+                    <th>Age</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 6: MORTALITY ==================== -->
+        <section id="view-mortality" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>⚠️</span> Bird Mortality Log</h2>
+              <p>Audit trail of bird mortality, disease tracking, and flock balance deductions.</p>
+            </div>
+            <button class="btn btn-danger" data-open-modal="modalRecordMortality">+ Record Mortality</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableMortality">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Type</th>
+                    <th>Birds Dead</th>
+                    <th>Reason</th>
+                    <th>Shed Location</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 7: EGG PRODUCTION ==================== -->
+        <section id="view-eggs" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🥚</span> Egg Production & Sales</h2>
+              <p>Daily egg collection, grading (good / broken / damaged), sales dispatch, and income.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalRecordEggs">+ Record Egg Collection</button>
+          </div>
+
+          <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.5rem;">
+            <div class="kpi-card">
+              <div class="kpi-title">Today's Eggs</div>
+              <div class="kpi-value" id="eggTodayCount">0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">This Week's Eggs</div>
+              <div class="kpi-value" id="eggWeekCount">0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">This Month's Eggs</div>
+              <div class="kpi-value" id="eggMonthCount">0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Month Egg Income</div>
+              <div class="kpi-value" id="eggMonthIncome" style="color: var(--primary-400);">₹0</div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableEggs">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Total Collected</th>
+                    <th>Good Eggs</th>
+                    <th>Broken / Damaged</th>
+                    <th>Eggs Sold</th>
+                    <th>Remaining</th>
+                    <th>Rate</th>
+                    <th>Income</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 8: SUPPLIERS ==================== -->
+        <section id="view-suppliers" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🚚</span> Supplier Management</h2>
+              <p>Suppliers supplying raw materials (Maize, Soy, Bran, Minerals) and purchase history.</p>
+            </div>
+            <button class="btn btn-primary admin-only" data-open-modal="modalAddSupplier">+ Add Supplier</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableSuppliers">
+                <thead>
+                  <tr>
+                    <th>Supplier ID</th>
+                    <th>Supplier Name</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Materials Supplied</th>
+                    <th>Purchases</th>
+                    <th>Total Spend</th>
+                    <th>Pending Payment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 9: RAW MATERIALS ==================== -->
+        <section id="view-raw-materials" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🌾</span> Raw Materials Inventory</h2>
+              <p>Feed mill raw materials stock (Maize, Soybean, Bran, DCP, Limestone, Minerals).</p>
+            </div>
+            <button class="btn btn-primary admin-only" data-open-modal="modalRecordPurchase">+ Purchase Raw Material</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableRawMaterials">
+                <thead>
+                  <tr>
+                    <th>Material Code</th>
+                    <th>Material Name</th>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Minimum Level</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 10: PURCHASES ==================== -->
+        <section id="view-purchases" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🛒</span> Raw Material Purchases</h2>
+              <p>Track supplier invoices, quantities, rates, transport costs, and payment status.</p>
+            </div>
+            <button class="btn btn-primary admin-only" data-open-modal="modalRecordPurchase">+ New Purchase</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tablePurchases">
+                <thead>
+                  <tr>
+                    <th>Purchase ID</th>
+                    <th>Date</th>
+                    <th>Supplier</th>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>Material Cost</th>
+                    <th>Transport</th>
+                    <th>Total Cost</th>
+                    <th>Status</th>
+                    <th>Invoice</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 11: FEED RECIPES ==================== -->
+        <section id="view-feed-recipes" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>📜</span> On-Farm Feed Recipes & Formulas</h2>
+              <p>Formulated ingredient ratios for Layer Mash, EDD High-Yield, and Chick Starter.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalProduceFeed">+ Produce Feed</button>
+          </div>
+
+          <div class="kpi-grid" id="recipesGrid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));"></div>
+        </section>
+
+        <!-- ==================== VIEW 12: FEED PRODUCTION ==================== -->
+        <section id="view-feed-production" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>⚙️</span> Feed Production Batches</h2>
+              <p>History of feed manufactured, raw material deductions, labour, power, and cost/kg.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalProduceFeed">+ Produce Feed Batch</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableFeedProduction">
+                <thead>
+                  <tr>
+                    <th>Prod ID</th>
+                    <th>Date</th>
+                    <th>Feed Type</th>
+                    <th>Batch No</th>
+                    <th>Quantity</th>
+                    <th>Raw Material Cost</th>
+                    <th>Labour</th>
+                    <th>Power</th>
+                    <th>Total Cost</th>
+                    <th>Cost/Kg</th>
+                    <th>Produced By</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 13: FEED STOCK ==================== -->
+        <section id="view-feed-stock" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>📦</span> Finished Feed Reserves</h2>
+              <p>Real-time reserves of finished feed ready for flock consumption.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalProduceFeed">+ Produce Feed</button>
+          </div>
+
+          <div class="kpi-grid" id="feedStockCardsGrid"></div>
+        </section>
+
+        <!-- ==================== VIEW 14: FEED USAGE ==================== -->
+        <section id="view-feed-usage" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🍽️</span> Daily Feed Consumption</h2>
+              <p>Record daily flock feeding across sheds and monitor consumption trends.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalRecordFeedUsage">+ Record Feeding</button>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableFeedUsage">
+                <thead>
+                  <tr>
+                    <th>Usage ID</th>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Bird Type</th>
+                    <th>Feed Type</th>
+                    <th>Quantity Fed</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 15: EXPENSES ==================== -->
+        <section id="view-expenses" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>💸</span> Farm Expenses</h2>
+              <p>Operational costs: salaries, grains, power, medicine, tractor diesel, and repairs.</p>
+            </div>
+            <button class="btn btn-primary" data-open-modal="modalAddExpense">+ Add Expense</button>
+          </div>
+
+          <div class="kpi-card" style="margin-bottom: 1.5rem; max-width: 320px;">
+            <div class="kpi-title">Total Farm Expenses</div>
+            <div class="kpi-value" id="expensesTotalAmount" style="color: var(--danger-500);">₹0</div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableExpenses">
+                <thead>
+                  <tr>
+                    <th>Expense ID</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Paid By</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 16: INCOME ==================== -->
+        <section id="view-income" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>💰</span> Farm Revenue & Income</h2>
+              <p>Revenue from egg dispatches, culled birds, feed sales, and manure.</p>
+            </div>
+          </div>
+
+          <div class="kpi-card" style="margin-bottom: 1.5rem; max-width: 320px;">
+            <div class="kpi-title">Total Farm Income</div>
+            <div class="kpi-value" id="incomeTotalAmount" style="color: var(--primary-400);">₹0</div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableIncome">
+                <thead>
+                  <tr>
+                    <th>Income ID</th>
+                    <th>Date</th>
+                    <th>Source</th>
+                    <th>Description</th>
+                    <th>Quantity / Rate</th>
+                    <th>Total Amount</th>
+                    <th>Method</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 17: REPORTS & EXPORT ==================== -->
+        <section id="view-reports" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>📈</span> Farm Reports & Export</h2>
+              <p>Comprehensive 360° analytics, financial statements, and CSV / Print Export.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="btn btn-secondary" onclick="window.printReport()">🖨️ Print / PDF</button>
+              <button class="btn btn-primary" onclick="window.exportReportCSV()">📥 Export CSV (Excel)</button>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="table-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>Select Report Type</label>
+                <select id="reportTypeSelect" class="form-control" onchange="window.navigateTo('reports')">
+                  <option value="complete">Complete Farm 360° Status</option>
+                  <option value="workers">Worker & Payroll Report</option>
+                  <option value="attendance">Worker Attendance Report</option>
+                  <option value="birds">Bird Population & Mortality</option>
+                  <option value="eggs">Egg Production & Sales</option>
+                  <option value="raw_materials">Raw Material Purchases</option>
+                  <option value="feed">Feed Production & Manufacturing</option>
+                  <option value="financial">Financial Income & Expense Statement</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>From Date</label>
+                <input type="date" id="reportFromDate" class="form-control" onchange="window.navigateTo('reports')">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>To Date</label>
+                <input type="date" id="reportToDate" class="form-control" onchange="window.navigateTo('reports')">
+              </div>
+            </div>
+          </div>
+
+          <!-- Report Display Card -->
+          <div class="table-card" style="padding: 1.5rem;">
+            <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color);">
+              <h2 style="font-size: 1.5rem; color: var(--primary-400);">RVKS WEB</h2>
+              <h3 style="font-size: 1.15rem; color: #fff;" id="reportTitleDisplay">Farm Report</h3>
+              <p style="font-size: 0.85rem; color: var(--text-dim);">
+                Date Range: <span id="reportDateRangeDisplay">All Time</span> | Generated: <span id="reportGeneratedAt">-</span>
+              </p>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table" id="tableReport">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <!-- Report Totals Display -->
+            <div id="reportTotalsDisplay" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap;"></div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 18: AUDIT TRAIL ==================== -->
+        <section id="view-audit" class="view-section" style="display: none;">
+          <div class="page-header">
+            <div class="page-title-area">
+              <h2><span>🛡️</span> Complete Audit Trail</h2>
+              <p>Non-repudiable audit logs of every critical change, user activity, and flock movement.</p>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="tableAuditLogs">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>Record ID</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS (FATHER FRIENDLY TOUCH FORMS) ==================== -->
+
+  <!-- 1. Record Mortality Modal -->
+  <div class="modal-backdrop" id="modalRecordMortality">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: var(--danger-500);"><span>⚠️</span> Record Bird Mortality</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formRecordMortality">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="mortDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Bird Batch</label>
+              <select id="mortBatchSelect" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Number of Dead Birds</label>
+              <input type="number" id="mortBirdCount" class="form-control" min="1" placeholder="e.g. 5" required>
+            </div>
+            <div class="form-group">
+              <label>Reason / Symptom</label>
+              <select id="mortReasonSelect" class="form-control">
+                <option value="Disease">Disease / Infection</option>
+                <option value="Weakness" selected>Weakness / Natural</option>
+                <option value="Accident">Accident / Trap</option>
+                <option value="Unknown">Unknown</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes / Isolation Details</label>
+            <input type="text" id="mortNotes" class="form-control" placeholder="Optional notes for veterinary record">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-danger">Save Mortality Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Record Egg Production Modal -->
+  <div class="modal-backdrop" id="modalRecordEggs">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: var(--amber-400);"><span>🥚</span> Record Egg Collection & Sales</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formRecordEggs">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="eggDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Bird Batch</label>
+              <select id="eggBatchSelect" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total Eggs Collected</label>
+              <input type="number" id="eggTotal" class="form-control" min="1" placeholder="e.g. 2900" required>
+            </div>
+            <div class="form-group">
+              <label>Broken Eggs</label>
+              <input type="number" id="eggBroken" class="form-control" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Damaged Eggs</label>
+              <input type="number" id="eggDamaged" class="form-control" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label>Eggs Sold</label>
+              <input type="number" id="eggSold" class="form-control" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Selling Price (₹ per egg)</label>
+              <input type="number" id="eggPrice" class="form-control" step="0.10" value="5.50">
+            </div>
+            <div class="form-group">
+              <label>Notes</label>
+              <input type="text" id="eggNotes" class="form-control" placeholder="Buyer / Tray packing notes">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Egg Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Produce Feed Modal -->
+  <div class="modal-backdrop" id="modalProduceFeed">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: #3b82f6;"><span>⚙️</span> Manufacture Farm Feed</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formProduceFeed">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="feedProdDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Feed Recipe Formula</label>
+              <select id="feedProdRecipeSelect" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Feed Type</label>
+              <select id="feedProdTypeSelect" class="form-control" required>
+                <option value="Layer Feed">Layer Feed</option>
+                <option value="EDD Feed" selected>EDD Feed</option>
+                <option value="Chick Feed">Chick Feed</option>
+                <option value="Custom Feed">Custom Feed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantity to Produce (Kg)</label>
+              <input type="number" id="feedProdQty" class="form-control" min="50" step="50" value="1000" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Labour Cost (₹)</label>
+              <input type="number" id="feedProdLabour" class="form-control" value="0">
+            </div>
+            <div class="form-group">
+              <label>Electricity / Milling Cost (₹)</label>
+              <input type="number" id="feedProdElectricity" class="form-control" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="feedProdNotes" class="form-control" placeholder="Operator notes">
+          </div>
+          <div class="form-hint" style="color: var(--amber-400);">
+            ℹ️ The system will automatically check stock of Maize, Soy, Bran, and Minerals before milling.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Produce Feed Batch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Record Feed Usage Modal -->
+  <div class="modal-backdrop" id="modalRecordFeedUsage">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: var(--primary-400);"><span>🍽️</span> Record Flock Feed Feeding</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formRecordFeedUsage">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="feedUsageDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Target Bird Batch</label>
+              <select id="feedUsageBatchSelect" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Feed Type</label>
+              <select id="feedUsageTypeSelect" class="form-control" required>
+                <option value="EDD Feed" selected>EDD Feed</option>
+                <option value="Layer Feed">Layer Feed</option>
+                <option value="Chick Feed">Chick Feed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantity Fed (Kg)</label>
+              <input type="number" id="feedUsageQty" class="form-control" min="1" step="5" placeholder="e.g. 350" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="feedUsageNotes" class="form-control" placeholder="Morning / Evening feeding shift">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Feeding Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Raw Material Purchase Modal -->
+  <div class="modal-backdrop" id="modalRecordPurchase">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: #8b5cf6;"><span>🛒</span> Purchase Raw Material</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formRecordPurchase">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Purchase Date</label>
+              <input type="date" id="purDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Supplier</label>
+              <select id="purSupplierSelect" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Raw Material</label>
+              <select id="purMaterialSelect" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label>Quantity (Kg)</label>
+              <input type="number" id="purQty" class="form-control" min="1" step="10" placeholder="e.g. 1000" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rate per Unit (₹)</label>
+              <input type="number" id="purRate" class="form-control" step="0.10" placeholder="e.g. 25.00" required>
+            </div>
+            <div class="form-group">
+              <label>Transport Cost (₹)</label>
+              <input type="number" id="purTransport" class="form-control" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Other Expenses (₹)</label>
+              <input type="number" id="purOther" class="form-control" value="0">
+            </div>
+            <div class="form-group">
+              <label>Payment Status</label>
+              <select id="purStatusSelect" class="form-control">
+                <option value="Paid" selected>Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Partial">Partial</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Invoice Number</label>
+              <input type="text" id="purInvoice" class="form-control" placeholder="e.g. INV-9912">
+            </div>
+            <div class="form-group">
+              <label>Notes</label>
+              <input type="text" id="purNotes" class="form-control" placeholder="Vehicle no / Bags">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Purchase & Update Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Record Payment Modal -->
+  <div class="modal-backdrop" id="modalRecordPayment">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: #f59e0b;"><span>💳</span> Record Worker Salary Payment</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formRecordPayment">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Worker</label>
+              <select id="payWorkerSelect" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label>Salary Period</label>
+              <input type="text" id="payPeriod" class="form-control" placeholder="e.g. Sep 2026" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Date</label>
+              <input type="date" id="payDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Amount (₹)</label>
+              <input type="number" id="payAmount" class="form-control" step="10" placeholder="e.g. 15000" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="payMethodSelect" class="form-control">
+                <option value="Cash" selected>Cash</option>
+                <option value="UPI">UPI / GPay / PhonePe</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Payment Status</label>
+              <select id="payStatusSelect" class="form-control">
+                <option value="Paid" selected>Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Partial">Partial</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="payNotes" class="form-control" placeholder="Optional settlement note">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Wage Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. Add Expense Modal -->
+  <div class="modal-backdrop" id="modalAddExpense">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: #ef4444;"><span>💸</span> Record Farm Expense</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formAddExpense">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="expDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="expCategorySelect" class="form-control">
+                <option value="Electricity">Electricity / Power</option>
+                <option value="Medicine">Medicine & Vaccines</option>
+                <option value="Maintenance">Shed Maintenance</option>
+                <option value="Transport">Transport & Diesel</option>
+                <option value="Packaging">Egg Paper Trays & Packaging</option>
+                <option value="Water">Water Spares & Plumbing</option>
+                <option value="Equipment">Equipment & Tools</option>
+                <option value="Bird Purchase">Bird Purchase</option>
+                <option value="Other" selected>Other Miscellaneous</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" id="expDescription" class="form-control" placeholder="e.g. Tractor diesel refill" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount (₹)</label>
+              <input type="number" id="expAmount" class="form-control" min="1" placeholder="e.g. 2500" required>
+            </div>
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="expMethodSelect" class="form-control">
+                <option value="Cash" selected>Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Paid By</label>
+            <input type="text" id="expPaidBy" class="form-control" value="Owner">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="expNotes" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-danger">Save Farm Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 8. Add Worker Modal -->
+  <div class="modal-backdrop" id="modalAddWorker">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: var(--primary-400);"><span>👥</span> Add Farm Worker</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formAddWorker">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Worker Full Name</label>
+              <input type="text" id="workerName" class="form-control" placeholder="e.g. Selvam M" required>
+            </div>
+            <div class="form-group">
+              <label>Job Role</label>
+              <input type="text" id="workerRole" class="form-control" placeholder="e.g. Shed Hand" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" id="workerPhone" class="form-control" placeholder="e.g. 9842100000">
+            </div>
+            <div class="form-group">
+              <label>Date of Joining</label>
+              <input type="date" id="workerDoj" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Salary Type</label>
+              <select id="workerSalaryType" class="form-control">
+                <option value="Monthly" selected>Monthly</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Salary Amount (₹)</label>
+              <input type="number" id="workerSalaryAmount" class="form-control" placeholder="e.g. 15000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="workerPayMethod" class="form-control">
+                <option value="Cash" selected>Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Address / Village</label>
+              <input type="text" id="workerAddress" class="form-control" placeholder="Address">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="workerNotes" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Worker</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 9. Add Bird Batch Modal -->
+  <div class="modal-backdrop" id="modalAddBatch">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: var(--amber-400);"><span>🏷️</span> Add Bird Batch</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formAddBatch">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Batch Name</label>
+              <input type="text" id="batchName" class="form-control" placeholder="e.g. EDD Batch 4" required>
+            </div>
+            <div class="form-group">
+              <label>Bird Type</label>
+              <select id="batchBirdType" class="form-control">
+                <option value="EDD" selected>EDD</option>
+                <option value="Layer">Layer</option>
+                <option value="Chick">Chick</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Arrival Date</label>
+              <input type="date" id="batchDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Initial Bird Quantity</label>
+              <input type="number" id="batchQty" class="form-control" min="1" placeholder="e.g. 3000" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Shed / Location</label>
+              <input type="text" id="batchShed" class="form-control" placeholder="e.g. Shed 4">
+            </div>
+            <div class="form-group">
+              <label>Age (Weeks)</label>
+              <input type="number" id="batchAge" class="form-control" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Hatchery / Source Supplier</label>
+            <input type="text" id="batchSupplier" class="form-control" placeholder="Supplier name">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="batchNotes" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Flock Batch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 10. Add Supplier Modal -->
+  <div class="modal-backdrop" id="modalAddSupplier">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="color: #38bdf8;"><span>🚚</span> Add Feed Material Supplier</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="formAddSupplier">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Supplier / Company Name</label>
+            <input type="text" id="supName" class="form-control" placeholder="e.g. Salem Agro Grains" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" id="supPhone" class="form-control" placeholder="Phone">
+            </div>
+            <div class="form-group">
+              <label>Address / Town</label>
+              <input type="text" id="supAddress" class="form-control" placeholder="Town / Market">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Materials Supplied (Comma Separated)</label>
+            <input type="text" id="supMaterials" class="form-control" placeholder="e.g. Maize, Soybean Meal, DORB">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="supNotes" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 11. Supplier History Details Modal -->
+  <div class="modal-backdrop" id="modalSupplierHistory">
+    <div class="modal-dialog" style="max-width: 750px;">
+      <div class="modal-header">
+        <h3><span>🚚</span> Supplier History: <span id="supHistoryName" style="color: var(--primary-400);">-</span></h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="kpi-card" style="flex: 1; padding: 1rem;">
+            <div class="kpi-title">Total Purchases</div>
+            <div class="kpi-value" id="supHistoryTotalSpent" style="font-size: 1.5rem; color: var(--primary-400);">₹0</div>
+          </div>
+          <div class="kpi-card" style="flex: 1; padding: 1rem;">
+            <div class="kpi-title">Pending Payments</div>
+            <div class="kpi-value" id="supHistoryPending" style="font-size: 1.5rem; color: var(--danger-500);">₹0</div>
+          </div>
+        </div>
+
+        <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-muted);">Materials Breakdown:</h4>
+        <div id="supHistoryMaterials" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem;"></div>
+
+        <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-muted);">Purchase Transactions:</h4>
+        <div class="table-responsive">
+          <table class="data-table" id="tableSupplierPurchases">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Material</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Total Cost</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main Application Script -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

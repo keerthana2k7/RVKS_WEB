@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  rvks_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rvks_web_poultry
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DATABASE_PATH=/app/backend/database/farm.db
+      - TZ=Asia/Kolkata
+    volumes:
+      - farm_data:/app/backend/database
+
+volumes:
+  farm_data:
+    driver: local
