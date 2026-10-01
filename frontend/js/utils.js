@@ -1,27 +1,77 @@
 // RVKS WEB - Utility Functions & Helpers
 
 /**
- * Displays a toast notification on the screen
- * @param {string} message - Message to display
- * @param {'success'|'error'|'warning'|'info'} type - Notification type
+ * Displays a toast notification on the screen with title, description, and auto-dismiss
+ * @param {string|object} titleOrMessage - Main toast title or message
+ * @param {'success'|'error'|'warning'|'info'} [type='success'] - Notification category
+ * @param {string} [description=null] - Optional detailed description line
+ * @param {number} [duration=null] - Optional custom duration in ms
  */
-export function showToast(message, type = "success") {
-  const container = document.getElementById("toastContainer");
-  if (!container) return;
+export function showToast(titleOrMessage, type = "success", description = null, duration = null) {
+  // Ensure toast container exists
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container";
+    container.id = "toastContainer";
+    container.setAttribute("aria-live", "polite");
+    container.setAttribute("aria-atomic", "true");
+    document.body.appendChild(container);
+  }
 
+  // Parse parameters
+  let title = titleOrMessage;
+  let desc = description;
+  let toastType = type || "success";
+
+  if (typeof titleOrMessage === "object" && titleOrMessage !== null) {
+    title = titleOrMessage.title || titleOrMessage.message || "";
+    desc = titleOrMessage.description || titleOrMessage.desc || null;
+    toastType = titleOrMessage.type || "success";
+    duration = titleOrMessage.duration || null;
+  }
+
+  // Determine Icon symbol
+  let iconSymbol = "✓";
+  if (toastType === "error") iconSymbol = "✕";
+  else if (toastType === "warning") iconSymbol = "⚠";
+  else if (toastType === "info") iconSymbol = "ℹ";
+
+  // Create toast element
   const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${toastType} toast-${toastType}`;
+  toast.setAttribute("role", "alert");
   toast.innerHTML = `
-    <span class="toast-icon">${type === "success" ? "✓" : type === "error" ? "⚠" : "ℹ"}</span>
-    <div class="toast-msg">${message}</div>
+    <div class="toast-icon">${iconSymbol}</div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      ${desc ? `<div class="toast-desc">${desc}</div>` : ""}
+    </div>
+    <button type="button" class="toast-close-btn" aria-label="Dismiss">&times;</button>
   `;
+
+  // Bind manual close button
+  const closeBtn = toast.querySelector(".toast-close-btn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => dismissToast(toast));
+  }
+
   container.appendChild(toast);
 
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  // Auto Dismiss: 3s for success, 4.5s for error/warning (Sections 7)
+  const dismissTime = duration || (toastType === "success" ? 3000 : 4500);
+  const timeoutId = setTimeout(() => {
+    dismissToast(toast);
+  }, dismissTime);
+
+  function dismissToast(el) {
+    clearTimeout(timeoutId);
+    el.style.opacity = "0";
+    el.style.transform = "translateY(12px) scale(0.96)";
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 300);
+  }
 }
 
 /**

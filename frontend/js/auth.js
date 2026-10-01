@@ -25,7 +25,7 @@ export const Auth = {
     const password = passwordInput ? passwordInput.value : "";
 
     if (!username || !password) {
-      showToast("Please enter Admin username and password", "error");
+      showToast("Missing Credentials", "error", "Please enter Admin username and password.");
       return false;
     }
 
@@ -46,11 +46,29 @@ export const Auth = {
       Api.setToken(res.token);
       Api.setUser(res.user);
       Auth.user = res.user;
-      showToast("Welcome to RVKS WEB, Farm Owner!");
+
+      // Section 1: Clear Login Success Toast
+      showToast("Login Successful", "success", "Welcome back, Farm Owner!");
+
       Auth.checkAuth();
     } catch (err) {
       console.error("[RVKS] Login error:", err);
-      showToast(err.message || "Login failed. Check server or credentials.", "error");
+      const errMsg = err.message || "";
+      if (
+        errMsg.toLowerCase().includes("invalid") ||
+        errMsg.toLowerCase().includes("credential") ||
+        errMsg.toLowerCase().includes("password") ||
+        errMsg.toLowerCase().includes("user") ||
+        errMsg.toLowerCase().includes("401")
+      ) {
+        // Section 4: Invalid Login
+        showToast("Invalid username or password", "error", "Please check your admin credentials and try again.");
+      } else if (errMsg.toLowerCase().includes("access denied")) {
+        // Section 4: Access Denied
+        showToast("Access Denied", "error", "Admin / Farm Owner access only.");
+      } else {
+        showToast("Login Failed", "error", errMsg || "Check server or credentials.");
+      }
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -92,7 +110,7 @@ export const Auth = {
       // Not logged in or non-admin role
       if (user && user.role !== "owner_admin" && user.role !== "admin") {
         Api.clearAuth();
-        showToast("Access denied. Only Farm Owner / Admin can log in.", "error");
+        showToast("Access Denied", "error", "Admin / Farm Owner access only.");
       }
       Auth.user = null;
       if (loginView) loginView.style.display = "flex";
@@ -111,12 +129,23 @@ export const Auth = {
     } catch (e) {
       // Ignore network errors on logout
     }
+    // Section 2 & 9: Clear session and redirect to Login Page first
     Api.clearAuth();
     Auth.user = null;
     Auth.checkAuth();
-    showToast("Farm Owner logged out successfully", "info");
+
+    // Section 2 & 9: Display Logout Success Toast on Login Screen
+    showToast("Logged Out Successfully", "success", "See you again!");
   }
 };
+
+// Global session expiry listener (Section 4)
+window.addEventListener("auth:unauthorized", () => {
+  Api.clearAuth();
+  Auth.user = null;
+  Auth.checkAuth();
+  showToast("Session Expired", "warning", "Your session has expired. Please log in again.");
+});
 
 // Expose on window for inline HTML onclick/onsubmit handlers
 window.handleLogin = Auth.handleLogin.bind(Auth);
