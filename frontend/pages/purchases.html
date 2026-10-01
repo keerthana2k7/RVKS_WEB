@@ -1,32 +1,136 @@
-<!-- VIEW 10: RAW MATERIAL PURCHASES -->
+<!-- VIEW 10: FEED RAW MATERIAL DEAL MANAGEMENT (ADMIN / OWNER ONLY) -->
 <section id="view-purchases" class="view-section">
+  <!-- Page Header -->
   <div class="page-header">
     <div class="page-title-area">
-      <h2><span>🛒</span> Raw Material Purchases</h2>
-      <p>Track supplier invoices, quantities, rates, transport costs, and payment status.</p>
+      <h2><span>🌾</span> Feed Raw Material Deals & Purchases</h2>
+      <p>Record raw-material deals used for producing farm feed. Manage supplier contracts, deal amounts, advances, payments, and supplier transaction history.</p>
     </div>
-    <button class="btn btn-primary admin-only" data-open-modal="modalRecordPurchase">+ New Purchase</button>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button class="btn btn-secondary" onclick="window.loadPurchases()" title="Reload deal ledger">🔄 Refresh</button>
+      <button class="btn btn-primary admin-only" onclick="window.openNewDealModal()">+ New Material Deal</button>
+    </div>
   </div>
 
+  <!-- 1. Top Summary KPI Cards -->
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem; gap: 1rem;">
+    <!-- Total Deals -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Deals</span>
+        <span class="kpi-icon" style="color: var(--primary-400);">🤝</span>
+      </div>
+      <div class="kpi-value" id="dealSummaryCount" style="font-size: 1.7rem;">0</div>
+      <div class="kpi-subtext">Recorded supplier deals</div>
+    </div>
+
+    <!-- Total Deal Amount -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Deal Amount</span>
+        <span class="kpi-icon" style="color: #60a5fa;">📋</span>
+      </div>
+      <div class="kpi-value" id="dealSummaryTotalAmount" style="font-size: 1.7rem; color: #60a5fa;">₹0</div>
+      <div class="kpi-subtext">Qty &times; Rate + transport</div>
+    </div>
+
+    <!-- Total Paid -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Paid</span>
+        <span class="kpi-icon" style="color: var(--primary-400);">💰</span>
+      </div>
+      <div class="kpi-value" id="dealSummaryPaid" style="font-size: 1.7rem; color: var(--primary-400);">₹0</div>
+      <div class="kpi-subtext">Settled to suppliers</div>
+    </div>
+
+    <!-- Total Advance Paid -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Advance Paid</span>
+        <span class="kpi-icon" style="color: #a855f7;">⚡</span>
+      </div>
+      <div class="kpi-value" id="dealSummaryAdvance" style="font-size: 1.7rem; color: #a855f7;">₹0</div>
+      <div class="kpi-subtext">Booking advances</div>
+    </div>
+
+    <!-- Total Pending -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Amount Pending</span>
+        <span class="kpi-icon" style="color: var(--amber-400);">⏳</span>
+      </div>
+      <div class="kpi-value" id="dealSummaryPending" style="font-size: 1.7rem; color: var(--amber-400);">₹0</div>
+      <div class="kpi-subtext highlight">Due to suppliers</div>
+    </div>
+  </div>
+
+  <!-- 2. Filters & Search Toolbar -->
+  <div class="table-card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <!-- Search Input -->
+      <div style="flex: 1; min-width: 250px;">
+        <input type="text" id="dealSearchInput" class="form-control" placeholder="🔍 Search deal code, supplier name, raw material..." oninput="window.filterDeals()">
+      </div>
+
+      <!-- Supplier Filter -->
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="dealSupplierFilter" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0; white-space: nowrap;">Supplier:</label>
+        <select id="dealSupplierFilter" class="form-control" style="width: auto; min-width: 170px;" onchange="window.filterDeals()">
+          <option value="All">All Suppliers</option>
+        </select>
+      </div>
+
+      <!-- Status Filter Dropdown -->
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="dealStatusFilter" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0; white-space: nowrap;">Status:</label>
+        <select id="dealStatusFilter" class="form-control" style="width: auto; min-width: 150px;" onchange="window.filterDeals()">
+          <option value="All">All Statuses</option>
+          <option value="Pending">Pending Only</option>
+          <option value="Partially Paid">Partially Paid</option>
+          <option value="Paid">Fully Paid</option>
+        </select>
+      </div>
+
+      <!-- Reset Filter Button -->
+      <button class="btn btn-secondary" onclick="window.resetDealFilters()" style="padding: 0.45rem 0.85rem; font-size: 0.85rem;">Reset</button>
+    </div>
+  </div>
+
+  <!-- 3. Deals Ledger Table -->
   <div class="table-card">
+    <div class="table-toolbar" style="padding: 0.85rem 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">Raw Material Deals Ledger</h3>
+        <span class="badge info" id="dealCountBadge">0 deals</span>
+      </div>
+      <div style="font-size: 0.82rem; color: var(--text-dim);">
+        Calculated formula: <span style="font-family: monospace; color: var(--text-muted);">Amount Pending = Total Deal Amount - Amount Paid</span>
+      </div>
+    </div>
+    
     <div class="table-responsive">
       <table class="data-table" id="tablePurchases">
         <thead>
           <tr>
-            <th>Purchase ID</th>
+            <th>Deal ID</th>
             <th>Date</th>
             <th>Supplier</th>
-            <th>Material</th>
+            <th>Raw Material</th>
             <th>Quantity</th>
-            <th>Rate</th>
-            <th>Material Cost</th>
-            <th>Transport</th>
-            <th>Total Cost</th>
+            <th>Rate / Unit</th>
+            <th>Total Deal Amount</th>
+            <th>Advance Paid</th>
+            <th>Amount Paid</th>
+            <th>Amount Pending</th>
+            <th>Due Date</th>
             <th>Status</th>
-            <th>Invoice</th>
+            <th style="min-width: 190px; text-align: center;">Action</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="dealTableBody">
+          <!-- Populated dynamically via JS -->
+        </tbody>
       </table>
     </div>
   </div>

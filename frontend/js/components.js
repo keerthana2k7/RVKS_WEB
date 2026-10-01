@@ -86,6 +86,8 @@ export async function ensureViewLoaded(viewId) {
         temp.innerHTML = html.trim();
         const section = temp.querySelector(".view-section") || temp.firstElementChild;
         if (section) {
+          section.style.display = "none";
+          section.classList.remove("active");
           container.appendChild(section);
           return true;
         }
@@ -391,33 +393,26 @@ export function initForms(refreshCallback) {
     });
   }
 
-  // 5. Raw Material Purchase Form
+  // 5. Raw Material Purchase & Deal Form
   const formPurchase = document.getElementById("formRecordPurchase");
   if (formPurchase && !formPurchase.dataset.bound) {
     formPurchase.dataset.bound = "true";
     formPurchase.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const payload = {
-        purchase_date: document.getElementById("purDate").value,
-        supplier_id: parseInt(document.getElementById("purSupplierSelect").value),
-        material_id: parseInt(document.getElementById("purMaterialSelect").value),
-        quantity: parseFloat(document.getElementById("purQty").value),
-        rate_per_unit: parseFloat(document.getElementById("purRate").value),
-        transport_cost: parseFloat(document.getElementById("purTransport").value || 0),
-        other_cost: parseFloat(document.getElementById("purOther").value || 0),
-        payment_status: document.getElementById("purStatusSelect").value,
-        invoice_number: document.getElementById("purInvoice").value,
-        notes: document.getElementById("purNotes").value
-      };
+      if (window.submitRecordDeal) {
+        await window.submitRecordDeal(e);
+      }
+    });
+  }
 
-      try {
-        const res = await Api.post("/api/raw-materials/purchases", payload);
-        showToast(res.message);
-        closeModal("modalRecordPurchase");
-        formPurchase.reset();
-        await onSubmitted();
-      } catch (err) {
-        showToast(err.message, "error");
+  // 5B. Record Supplier Deal Payment Form
+  const formDealPayment = document.getElementById("formRecordDealPayment");
+  if (formDealPayment && !formDealPayment.dataset.bound) {
+    formDealPayment.dataset.bound = "true";
+    formDealPayment.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (window.submitRecordDealPayment) {
+        await window.submitRecordDealPayment(e);
       }
     });
   }

@@ -7,7 +7,8 @@
     </div>
   </div>
 
-  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-bottom: 1.5rem;">
+    <!-- Farm Owner Account -->
     <div class="kpi-card">
       <div class="kpi-card-header">
         <span class="kpi-title">Farm Owner Account</span>
@@ -21,12 +22,13 @@
           <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.35rem;">Access Level: <strong style="color: var(--primary-300);">Single Master Administrator</strong></p>
           <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.35rem;">Status: <span class="badge success">Active</span></p>
         </div>
-        <div style="margin-top: 1.25rem;">
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
           <button class="btn btn-secondary btn-sm" onclick="window.logout()">Sign Out of Admin Session</button>
         </div>
       </div>
     </div>
 
+    <!-- Access Control Architecture -->
     <div class="kpi-card">
       <div class="kpi-card-header">
         <span class="kpi-title">Access Control Architecture</span>
@@ -38,6 +40,27 @@
         <div>🔒 <strong>Protected API Endpoints:</strong> All backend operations verify Owner/Admin authentication tokens before granting access.</div>
         <div>📊 <strong>Full Operations Control:</strong> Flocks, mortality, egg production, feed milling, purchases, wages, and finances.</div>
         <div>🛡️ <strong>Permanent Audit Trail:</strong> Every addition, modification, and settlement is logged for owner verification.</div>
+      </div>
+    </div>
+
+    <!-- System Settings & Security -->
+    <div class="kpi-card">
+      <div class="kpi-card-header">
+        <span class="kpi-title">System Settings & Data Control</span>
+        <div class="kpi-icon">💻</div>
+      </div>
+      <div style="margin-top: 1rem; font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
+        <div>
+          <div style="font-weight: 600; color: var(--text-main);">Database Integrity</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim);">SQLite WAL mode active with transactional foreign keys and automated recovery.</div>
+        </div>
+        <div>
+          <div style="font-weight: 600; color: var(--text-main);">Offline Sync Mode</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim);">PWA Service Worker caches static assets and syncs actions when connection is restored.</div>
+        </div>
+        <div style="margin-top: 0.5rem;">
+          <button class="btn btn-secondary btn-sm" onclick="window.navigateTo('audit')">🔍 View Full Audit Trail</button>
+        </div>
       </div>
     </div>
   </div>

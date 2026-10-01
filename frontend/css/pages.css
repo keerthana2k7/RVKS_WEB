@@ -219,7 +219,12 @@
   font-size: 0.9rem;
 }
 
-/* Section visibility */
+/* Section visibility - Strict isolation */
 .view-section {
-  display: block;
+  display: none !important;
 }
+
+.view-section.active {
+  display: block !important;
+}
+

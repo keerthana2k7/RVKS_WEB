@@ -41,8 +41,16 @@ export async function navigateTo(viewId) {
   // Ensure view component is fetched & mounted into DOM
   await ensureViewLoaded(viewId);
 
-  // Hide all view sections
+  // Hide all view sections and children of appContent
+  const container = document.getElementById("appContent");
+  if (container) {
+    Array.from(container.children).forEach(el => {
+      el.classList.remove("active");
+      el.style.display = "none";
+    });
+  }
   document.querySelectorAll(".view-section").forEach(sec => {
+    sec.classList.remove("active");
     sec.style.display = "none";
   });
 
@@ -50,6 +58,7 @@ export async function navigateTo(viewId) {
   const targetId = `view-${viewId === 'birds' ? 'batches' : viewId}`;
   const targetSec = document.getElementById(targetId);
   if (targetSec) {
+    targetSec.classList.add("active");
     targetSec.style.display = "block";
   }
 
@@ -545,15 +554,15 @@ export async function loadPayments() {
           return `
             <tr style="${w.is_payment_due ? 'background: rgba(239, 68, 68, 0.04);' : ''}">
               <td>
+                <span style="font-family: monospace; font-weight: 700; color: var(--primary-300);">${w.worker_code}</span>
+              </td>
+              <td>
                 <div style="font-weight: 700; color: var(--text-main); font-size: 0.98rem;">${w.name}</div>
-                <div style="font-size: 0.78rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem;">
-                  <span style="font-family: monospace; font-weight: 600;">${w.worker_code}</span> &bull; 
-                  <span>${w.job_role}</span>
-                </div>
+                <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 0.1rem;">${w.job_role}</div>
               </td>
               <td>
                 <strong>₹${Number(w.regular_salary_due).toLocaleString()}</strong>
-                <div style="font-size: 0.75rem; color: var(--text-dim);">${w.salary_type}</div>
+                <div style="font-size: 0.74rem; color: var(--text-dim);">${w.salary_type}</div>
               </td>
               <td>
                 <div>${formatDate(w.payment_due_date)}</div>
@@ -562,23 +571,22 @@ export async function loadPayments() {
               <td><strong>₹${Number(w.amount_already_paid).toLocaleString()}</strong></td>
               <td>${advanceDisplay}</td>
               <td>${extraDisplay}</td>
-              <td><strong style="color: var(--text-main); font-size: 1.02rem;">₹${Number(w.total_amount_paid).toLocaleString()}</strong></td>
               <td>
                 <strong style="color: ${remainingColor}; font-size: 1.05rem;">₹${Number(w.remaining_amount).toLocaleString()}</strong>
               </td>
               <td>
-                <span class="badge ${statusBadgeClass}">${w.payment_status}</span>
+                <div style="font-size: 0.85rem;">${w.last_payment_date && w.last_payment_date !== '-' ? formatDate(w.last_payment_date) : '-'}</div>
               </td>
               <td>
-                <div style="font-size: 0.85rem;">${w.last_payment_date && w.last_payment_date !== '-' ? formatDate(w.last_payment_date) : '-'}</div>
+                <span class="badge ${statusBadgeClass}">${w.payment_status}</span>
               </td>
               <td style="text-align: center;">
                 <div style="display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap;">
                   <button class="btn btn-primary btn-sm" onclick="window.openMakePayment(${w.worker_id})" title="Make Payment for ${w.name}">
                     💳 Make Payment
                   </button>
-                  <button class="btn btn-secondary btn-sm" onclick="window.viewWorkerPaymentHistory(${w.worker_id})" title="View Payment History">
-                    📜 History
+                  <button class="btn btn-secondary btn-sm" onclick="window.viewWorkerPaymentHistory(${w.worker_id})" title="View History">
+                    📜 View History
                   </button>
                 </div>
               </td>
@@ -783,16 +791,50 @@ window.updatePayFormPreview = function() {
   const worker = cachedPayrollWorkers.find(w => w.worker_id === workerId);
   const statusEl = document.getElementById("payModalStatusPreview");
 
-  if (worker && statusEl) {
-    const newEffPaid = (worker.amount_already_paid || 0) + (worker.advance_paid || 0) + amt;
+  // 5-step waterfall elements
+  const elWfSalary = document.getElementById("calcWaterfallSalary");
+  const elWfPaid = document.getElementById("calcWaterfallPaid");
+  const elWfAdvance = document.getElementById("calcWaterfallAdvance");
+  const elWfExtra = document.getElementById("calcWaterfallExtra");
+  const elWfRem = document.getElementById("calcWaterfallRemaining");
+
+  if (worker) {
+    const regularSalary = Number(worker.regular_salary_due || 0);
+    const alreadyPaid = Number(worker.amount_already_paid || 0);
+    const advancePaid = Number(worker.advance_paid || 0);
+    
+    // New total effective paid towards regular salary
+    const newEffPaid = alreadyPaid + advancePaid + amt;
+    const newRem = Math.max(0, regularSalary - newEffPaid);
+
+    if (elWfSalary) elWfSalary.innerText = `₹${regularSalary.toLocaleString()}`;
+    if (elWfPaid) elWfPaid.innerText = `₹${alreadyPaid.toLocaleString()}`;
+    if (elWfAdvance) elWfAdvance.innerText = `₹${advancePaid.toLocaleString()}`;
+    if (elWfExtra) elWfExtra.innerText = `₹${extra.toLocaleString()}`;
+    if (elWfRem) elWfRem.innerText = `₹${newRem.toLocaleString()}`;
+
     let expectedStatus = "Pending";
-    if (newEffPaid >= worker.regular_salary_due) {
-      expectedStatus = newEffPaid > worker.regular_salary_due ? "Overpaid" : "Paid";
+    if (newEffPaid >= regularSalary) {
+      expectedStatus = newEffPaid > regularSalary ? "Overpaid" : "Paid";
     } else if (newEffPaid > 0) {
       expectedStatus = "Partially Paid";
     }
-    const newRem = Math.max(0, worker.regular_salary_due - newEffPaid);
-    statusEl.innerHTML = `Projected Status: <strong>${expectedStatus}</strong> (Remaining: ₹${newRem.toLocaleString()})`;
+
+    let statusBadgeClass = "info";
+    if (expectedStatus === "Paid") statusBadgeClass = "success";
+    else if (expectedStatus === "Pending") statusBadgeClass = "warning";
+    else if (expectedStatus === "Overpaid") statusBadgeClass = "danger";
+
+    if (statusEl) {
+      statusEl.innerHTML = `Status: <span class="badge ${statusBadgeClass}">${expectedStatus}</span> (Balance: ₹${newRem.toLocaleString()})`;
+    }
+  } else {
+    if (elWfSalary) elWfSalary.innerText = "₹0";
+    if (elWfPaid) elWfPaid.innerText = "₹0";
+    if (elWfAdvance) elWfAdvance.innerText = "₹0";
+    if (elWfExtra) elWfExtra.innerText = `₹${extra.toLocaleString()}`;
+    if (elWfRem) elWfRem.innerText = "₹0";
+    if (statusEl) statusEl.innerHTML = `Status: <span class="badge info">Select Worker</span>`;
   }
 };
 
@@ -1121,28 +1163,403 @@ async function loadRawMaterials() {
   `).join("");
 }
 
-// ----------------- VIEW 10: PURCHASES ----------------- //
-async function loadPurchases() {
-  const data = await Api.get("/api/raw-materials/purchases");
-  const tbody = document.querySelector("#tablePurchases tbody");
+// ----------------- VIEW 10: FEED RAW MATERIAL DEALS & PURCHASES ----------------- //
+let cachedRawMaterialDeals = [];
+
+export async function loadPurchases() {
+  const searchInput = document.getElementById("dealSearchInput");
+  const supplierFilter = document.getElementById("dealSupplierFilter");
+  const statusFilter = document.getElementById("dealStatusFilter");
+
+  const queryParams = new URLSearchParams();
+  if (supplierFilter && supplierFilter.value !== "All") queryParams.set("supplier_id", supplierFilter.value);
+  if (statusFilter && statusFilter.value !== "All") queryParams.set("payment_status", statusFilter.value);
+  if (searchInput && searchInput.value.trim()) queryParams.set("search", searchInput.value.trim());
+
+  try {
+    const data = await Api.get(`/api/raw-materials/deals?${queryParams.toString()}`);
+    cachedRawMaterialDeals = data.deals || data.purchases || [];
+    const summary = data.summary || {};
+
+    // 1. Update 5 Summary KPI Cards
+    const elCount = document.getElementById("dealSummaryCount");
+    if (elCount) elCount.innerText = summary.total_deals || 0;
+
+    const elTotal = document.getElementById("dealSummaryTotalAmount");
+    if (elTotal) elTotal.innerText = `₹${Number(summary.total_deal_amount || 0).toLocaleString()}`;
+
+    const elPaid = document.getElementById("dealSummaryPaid");
+    if (elPaid) elPaid.innerText = `₹${Number(summary.total_amount_paid || 0).toLocaleString()}`;
+
+    const elAdvance = document.getElementById("dealSummaryAdvance");
+    if (elAdvance) elAdvance.innerText = `₹${Number(summary.total_advance_paid || 0).toLocaleString()}`;
+
+    const elPending = document.getElementById("dealSummaryPending");
+    if (elPending) elPending.innerText = `₹${Number(summary.total_amount_pending || 0).toLocaleString()}`;
+
+    const elBadge = document.getElementById("dealCountBadge");
+    if (elBadge) elBadge.innerText = `${cachedRawMaterialDeals.length} deal${cachedRawMaterialDeals.length === 1 ? '' : 's'}`;
+
+    // Populate supplier filter dropdown if empty
+    if (supplierFilter && supplierFilter.options.length <= 1) {
+      try {
+        const suppliersRes = await Api.get("/api/raw-materials/suppliers");
+        const sups = suppliersRes.suppliers || [];
+        sups.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = `${s.supplier_name} (${s.supplier_code})`;
+          supplierFilter.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("Could not load suppliers for deal filter:", e);
+      }
+    }
+
+    // 2. Render Deals Table
+    renderDealsTable(cachedRawMaterialDeals);
+  } catch (err) {
+    console.error("Error loading raw material deals:", err);
+    showToast(`Error loading deals: ${err.message}`, "error");
+  }
+}
+
+function renderDealsTable(deals) {
+  const tbody = document.getElementById("dealTableBody") || document.querySelector("#tablePurchases tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = data.purchases.map(p => `
-    <tr>
-      <td><strong>${p.purchase_code}</strong></td>
-      <td>${formatDate(p.purchase_date)}</td>
-      <td><strong>${p.supplier_name}</strong></td>
-      <td>${p.material_name}</td>
-      <td>${Number(p.quantity).toLocaleString()} ${p.unit}</td>
-      <td>₹${p.rate_per_unit}</td>
-      <td>₹${Number(p.material_cost).toLocaleString()}</td>
-      <td>₹${Number(p.transport_cost).toLocaleString()}</td>
-      <td><strong style="color: var(--primary-400); font-size: 1.05rem;">₹${Number(p.total_cost).toLocaleString()}</strong></td>
-      <td><span class="badge ${p.payment_status === 'Paid' ? 'success' : 'warning'}">${p.payment_status}</span></td>
-      <td>${p.invoice_number || '-'}</td>
-    </tr>
-  `).join("");
+  if (deals.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 2rem; color: var(--text-dim);">No raw material deals found matching the criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = deals.map(d => {
+    let statusClass = "warning";
+    if (d.payment_status === "Paid") statusClass = "success";
+    else if (d.payment_status === "Partially Paid") statusClass = "info";
+
+    const advanceDisplay = d.advance_paid > 0
+      ? `<strong style="color: #a855f7;">₹${Number(d.advance_paid).toLocaleString()}</strong>`
+      : `<span style="color: var(--text-dim);">₹0</span>`;
+
+    const pendingColor = d.amount_pending > 0 ? "var(--amber-400)" : "var(--primary-400)";
+
+    return `
+      <tr>
+        <td>
+          <span style="font-family: monospace; font-weight: 700; color: var(--primary-300); font-size: 0.92rem;">${d.purchase_code}</span>
+        </td>
+        <td>${formatDate(d.deal_date || d.purchase_date)}</td>
+        <td>
+          <div style="font-weight: 700; color: var(--text-main);">${d.supplier_name}</div>
+          <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 0.1rem;">
+            ${d.supplier_code} &bull; ${d.supplier_phone || 'No phone'}
+          </div>
+        </td>
+        <td>
+          <div style="font-weight: 600;">${d.material_name}</div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">${d.material_category || 'Feed Ingredient'}</div>
+        </td>
+        <td>
+          <strong>${Number(d.quantity).toLocaleString()} ${d.unit || d.material_unit || 'Kg'}</strong>
+        </td>
+        <td>₹${Number(d.rate_per_unit).toLocaleString()}</td>
+        <td>
+          <strong style="color: #60a5fa; font-size: 1.02rem;">₹${Number(d.total_deal_amount || d.total_cost).toLocaleString()}</strong>
+        </td>
+        <td>${advanceDisplay}</td>
+        <td><strong>₹${Number(d.amount_paid || 0).toLocaleString()}</strong></td>
+        <td>
+          <strong style="color: ${pendingColor}; font-size: 1.02rem;">₹${Number(d.amount_pending || 0).toLocaleString()}</strong>
+        </td>
+        <td>
+          <div style="font-size: 0.84rem;">${d.payment_due_date ? formatDate(d.payment_due_date) : '-'}</div>
+        </td>
+        <td>
+          <span class="badge ${statusClass}">${d.payment_status}</span>
+        </td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.openRecordDealPayment(${d.id})" title="Record Payment for Deal ${d.purchase_code}">
+              💳 Payment
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="window.openDealPaymentHistory(${d.id})" title="View Payment History">
+              📜 History
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
+
+window.filterDeals = function() {
+  loadPurchases();
+};
+
+window.resetDealFilters = function() {
+  const searchInput = document.getElementById("dealSearchInput");
+  const supplierFilter = document.getElementById("dealSupplierFilter");
+  const statusFilter = document.getElementById("dealStatusFilter");
+  if (searchInput) searchInput.value = "";
+  if (supplierFilter) supplierFilter.value = "All";
+  if (statusFilter) statusFilter.value = "All";
+  loadPurchases();
+};
+
+window.openNewDealModal = async function() {
+  await populateDropdowns();
+  const form = document.getElementById("formRecordPurchase");
+  if (form) form.reset();
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dealDateInput = document.getElementById("purDealDate");
+  if (dealDateInput) dealDateInput.value = todayIso;
+
+  window.onDealMaterialSelected();
+  window.updateDealPreview();
+  openModal("modalRecordPurchase");
+};
+
+window.onDealMaterialSelected = function() {
+  const select = document.getElementById("purMaterialSelect");
+  if (!select) return;
+  const unitInput = document.getElementById("purUnit");
+  const matText = select.options[select.selectedIndex]?.text || "";
+  if (unitInput) {
+    if (matText.includes("Litre")) unitInput.value = "Litre";
+    else if (matText.includes("Ton")) unitInput.value = "Ton";
+    else unitInput.value = "Kg";
+  }
+  window.updateDealPreview();
+};
+
+window.updateDealPreview = function() {
+  const qty = parseFloat(document.getElementById("purQty")?.value || 0) || 0;
+  const rate = parseFloat(document.getElementById("purRate")?.value || 0) || 0;
+  const transport = parseFloat(document.getElementById("purTransport")?.value || 0) || 0;
+  const advance = parseFloat(document.getElementById("purAdvancePaid")?.value || 0) || 0;
+
+  const materialCost = qty * rate;
+  const total = materialCost + transport;
+  const pending = Math.max(0, total - advance);
+
+  const elTotal = document.getElementById("previewDealTotal");
+  const elAdvance = document.getElementById("previewDealAdvance");
+  const elPending = document.getElementById("previewDealPending");
+  const elStatus = document.getElementById("previewDealStatus");
+
+  if (elTotal) elTotal.innerText = `₹${Math.round(total).toLocaleString()}`;
+  if (elAdvance) elAdvance.innerText = `₹${Math.round(advance).toLocaleString()}`;
+  if (elPending) elPending.innerText = `₹${Math.round(pending).toLocaleString()}`;
+
+  if (elStatus) {
+    let statusText = "Pending";
+    let statusClass = "warning";
+    if (total > 0 && pending <= 0) {
+      statusText = "Paid";
+      statusClass = "success";
+    } else if (advance > 0) {
+      statusText = "Partially Paid";
+      statusClass = "info";
+    }
+    elStatus.innerHTML = `<span class="badge ${statusClass}">${statusText}</span>`;
+  }
+};
+
+window.submitRecordDeal = async function(event) {
+  if (event) event.preventDefault();
+
+  const supplierId = parseInt(document.getElementById("purSupplierSelect")?.value);
+  const materialId = parseInt(document.getElementById("purMaterialSelect")?.value);
+  const qty = parseFloat(document.getElementById("purQty")?.value || 0);
+  const rate = parseFloat(document.getElementById("purRate")?.value || 0);
+  const transport = parseFloat(document.getElementById("purTransport")?.value || 0) || 0;
+  const advance = parseFloat(document.getElementById("purAdvancePaid")?.value || 0) || 0;
+
+  if (!supplierId || !materialId || qty <= 0 || rate <= 0) {
+    showToast("Please enter valid supplier, material, quantity, and rate", "warning");
+    return;
+  }
+
+  const payload = {
+    supplier_id: supplierId,
+    material_id: materialId,
+    deal_date: document.getElementById("purDealDate")?.value || new Date().toISOString().slice(0, 10),
+    payment_due_date: document.getElementById("purPaymentDueDate")?.value || null,
+    expected_delivery_date: document.getElementById("purExpectedDelivery")?.value || null,
+    actual_delivery_date: document.getElementById("purActualDelivery")?.value || null,
+    quantity: qty,
+    rate_per_unit: rate,
+    transport_cost: transport,
+    advance_paid: advance,
+    payment_method: document.getElementById("purPaymentMethod")?.value || "Bank Transfer",
+    invoice_number: document.getElementById("purInvoice")?.value?.trim() || "",
+    notes: document.getElementById("purNotes")?.value?.trim() || ""
+  };
+
+  const btn = document.getElementById("btnSaveDeal");
+  if (btn) { btn.disabled = true; btn.innerText = "Recording Deal..."; }
+
+  try {
+    const res = await Api.post("/api/raw-materials/deals", payload);
+    showToast(res.message || "Feed raw material deal recorded successfully!");
+    closeModal("modalRecordPurchase");
+    document.getElementById("formRecordPurchase")?.reset();
+    await loadPurchases();
+    await populateDropdowns();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "Save Deal & Update Inventory"; }
+  }
+};
+
+window.openRecordDealPayment = function(dealId) {
+  const deal = cachedRawMaterialDeals.find(d => d.id === dealId);
+  if (!deal) {
+    showToast("Deal record not found", "error");
+    return;
+  }
+
+  const inputId = document.getElementById("dpayDealId");
+  if (inputId) inputId.value = deal.id;
+
+  const elCode = document.getElementById("dpayBannerCode");
+  if (elCode) elCode.innerText = deal.purchase_code;
+
+  const elSup = document.getElementById("dpayBannerSupplier");
+  if (elSup) elSup.innerText = `${deal.supplier_name} (${deal.material_name})`;
+
+  const elTot = document.getElementById("dpayBannerTotal");
+  if (elTot) elTot.innerText = `₹${Number(deal.total_deal_amount || deal.total_cost).toLocaleString()}`;
+
+  const elPaid = document.getElementById("dpayBannerPaid");
+  if (elPaid) elPaid.innerText = `₹${Number(deal.amount_paid || 0).toLocaleString()}`;
+
+  const elPend = document.getElementById("dpayBannerPending");
+  if (elPend) elPend.innerText = `₹${Number(deal.amount_pending || 0).toLocaleString()}`;
+
+  const dateInput = document.getElementById("dpayDate");
+  if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+  const amtInput = document.getElementById("dpayAmount");
+  if (amtInput) amtInput.value = deal.amount_pending > 0 ? deal.amount_pending : "";
+
+  window.updateDealPaymentPreview();
+  openModal("modalRecordDealPayment");
+};
+
+window.updateDealPaymentPreview = function() {
+  const dealId = parseInt(document.getElementById("dpayDealId")?.value);
+  const deal = cachedRawMaterialDeals.find(d => d.id === dealId);
+  if (!deal) return;
+
+  const amtToPay = parseFloat(document.getElementById("dpayAmount")?.value || 0) || 0;
+  const currentPaid = Number(deal.amount_paid || 0);
+  const total = Number(deal.total_deal_amount || deal.total_cost || 0);
+
+  const newTotalPaid = currentPaid + amtToPay;
+  const newBalance = Math.max(0, total - newTotalPaid);
+
+  const elBal = document.getElementById("dpayModalBalancePreview");
+  if (elBal) elBal.innerText = `₹${Math.round(newBalance).toLocaleString()}`;
+
+  const elStatus = document.getElementById("dpayModalStatusPreview");
+  if (elStatus) {
+    let statusText = "Pending";
+    let statusClass = "warning";
+    if (newBalance <= 0) {
+      statusText = "Fully Paid";
+      statusClass = "success";
+    } else if (newTotalPaid > 0) {
+      statusText = "Partially Paid";
+      statusClass = "info";
+    }
+    elStatus.innerHTML = `Status: <span class="badge ${statusClass}">${statusText}</span>`;
+  }
+};
+
+window.submitRecordDealPayment = async function(event) {
+  if (event) event.preventDefault();
+
+  const dealId = parseInt(document.getElementById("dpayDealId")?.value);
+  const amount = parseFloat(document.getElementById("dpayAmount")?.value || 0);
+
+  if (!dealId || isNaN(dealId) || amount <= 0) {
+    showToast("Please enter a valid payment amount greater than ₹0", "warning");
+    return;
+  }
+
+  const payload = {
+    payment_date: document.getElementById("dpayDate")?.value || new Date().toISOString().slice(0, 10),
+    payment_type: document.getElementById("dpayTypeSelect")?.value || "Payment",
+    amount: amount,
+    payment_method: document.getElementById("dpayMethodSelect")?.value || "Bank Transfer",
+    notes: document.getElementById("dpayNotes")?.value?.trim() || ""
+  };
+
+  try {
+    const res = await Api.post(`/api/raw-materials/deals/${dealId}/payments`, payload);
+    showToast(res.message || "Payment recorded successfully!");
+    closeModal("modalRecordDealPayment");
+    document.getElementById("formRecordDealPayment")?.reset();
+    await loadPurchases();
+    await loadSuppliers();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, "error");
+  }
+};
+
+window.openDealPaymentHistory = async function(dealId) {
+  try {
+    const data = await Api.get(`/api/raw-materials/deals/${dealId}/payments`);
+    const deal = data.deal || {};
+    const payments = data.payments || [];
+
+    const subEl = document.getElementById("dealHistorySub");
+    if (subEl) {
+      subEl.innerHTML = `Deal: <strong style="color: var(--primary-300);">${deal.purchase_code}</strong> &bull; Supplier: <strong>${deal.supplier_name}</strong> &bull; Material: <strong>${deal.material_name}</strong>`;
+    }
+
+    const elTot = document.getElementById("dealHistTotal");
+    if (elTot) elTot.innerText = `₹${Number(deal.total_cost || 0).toLocaleString()}`;
+
+    const elPaid = document.getElementById("dealHistPaid");
+    if (elPaid) elPaid.innerText = `₹${Number(deal.amount_paid || 0).toLocaleString()}`;
+
+    const elAdv = document.getElementById("dealHistAdvance");
+    if (elAdv) elAdv.innerText = `₹${Number(deal.advance_paid || 0).toLocaleString()}`;
+
+    const elPend = document.getElementById("dealHistPending");
+    if (elPend) elPend.innerText = `₹${Number(deal.amount_pending || 0).toLocaleString()}`;
+
+    const tbody = document.getElementById("dealPaymentHistoryBody");
+    if (tbody) {
+      if (payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No payment transactions recorded for this deal yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = payments.map(p => `
+          <tr>
+            <td>${formatDate(p.payment_date)}</td>
+            <td>
+              <span class="badge ${p.payment_type === 'Advance' ? 'info' : (p.payment_type === 'Final Payment' ? 'success' : '')}" style="font-size: 0.78rem;">
+                ${p.payment_type}
+              </span>
+            </td>
+            <td><strong style="color: var(--primary-400);">₹${Number(p.amount).toLocaleString()}</strong></td>
+            <td>${p.payment_method}</td>
+            <td>${p.notes || '-'}</td>
+          </tr>
+        `).join("");
+      }
+    }
+
+    openModal("modalDealPaymentHistory");
+  } catch (err) {
+    showToast(`Error: ${err.message}`, "error");
+  }
+};
 
 // ----------------- VIEW 11: FEED RECIPES ----------------- //
 async function loadRecipes() {
@@ -1392,6 +1809,7 @@ window.printReport = function() {
 
 window.navigateTo = navigateTo;
 window.loadDashboard = loadDashboard;
+window.loadPurchases = loadPurchases;
 
 // ----------------- APP BOOTSTRAP ----------------- //
 export async function initializeApp() {

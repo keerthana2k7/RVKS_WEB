@@ -277,6 +277,95 @@ class TestFarmAPI(unittest.TestCase):
         self.assertEqual(hist_data["stats"]["total_extra_paid"], 2000.0)
         self.assertEqual(hist_data["stats"]["total_received"], 17000.0)
 
+    def test_feed_raw_material_deal_lifecycle(self):
+        """Test complete Feed Raw Material Deal creation, automated calculations, advance, and payment history."""
+        # 1. Create a deal: Maize, 1,000 kg @ ₹30/kg with ₹10,000 Advance
+        deal_payload = {
+            "supplier_id": 1,
+            "material_id": 1,
+            "deal_date": "2026-10-01",
+            "quantity": 1000.0,
+            "rate_per_unit": 30.0,
+            "transport_cost": 0.0,
+            "advance_paid": 10000.0,
+            "payment_method": "UPI",
+            "notes": "Bulk yellow maize deal"
+        }
+        res = self.client.post("/api/raw-materials/deals", json=deal_payload, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res.status_code, 201)
+        deal_data = res.get_json()
+        deal_id = deal_data["deal_id"]
+
+        # Calculations: Total = 30,000, Paid = 10,000, Pending = 20,000, Status = Partially Paid
+        self.assertEqual(deal_data["total_deal_amount"], 30000.0)
+        self.assertEqual(deal_data["amount_paid"], 10000.0)
+        self.assertEqual(deal_data["amount_pending"], 20000.0)
+        self.assertEqual(deal_data["payment_status"], "Partially Paid")
+
+        # 2. Check Deal Payment History shows initial Advance
+        res_hist1 = self.client.get(f"/api/raw-materials/deals/{deal_id}/payments", headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res_hist1.status_code, 200)
+        h1 = res_hist1.get_json()
+        self.assertEqual(len(h1["payments"]), 1)
+        self.assertEqual(h1["payments"][0]["payment_type"], "Advance")
+        self.assertEqual(h1["payments"][0]["amount"], 10000.0)
+
+        # 3. Record Partial Payment: ₹15,000
+        pay_res1 = self.client.post(f"/api/raw-materials/deals/{deal_id}/payments", json={
+            "payment_date": "2026-10-10",
+            "payment_type": "Payment",
+            "amount": 15000.0,
+            "payment_method": "Bank Transfer",
+            "notes": "Partial payment towards Maize deal"
+        }, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(pay_res1.status_code, 201)
+        p1_data = pay_res1.get_json()
+        self.assertEqual(p1_data["new_amount_paid"], 25000.0)
+        self.assertEqual(p1_data["new_amount_pending"], 5000.0)
+        self.assertEqual(p1_data["new_status"], "Partially Paid")
+
+        # 4. Record Final Settlement: ₹5,000
+        pay_res2 = self.client.post(f"/api/raw-materials/deals/{deal_id}/payments", json={
+            "payment_date": "2026-10-15",
+            "payment_type": "Final Payment",
+            "amount": 5000.0,
+            "payment_method": "Bank Transfer",
+            "notes": "Final settlement"
+        }, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(pay_res2.status_code, 201)
+        p2_data = pay_res2.get_json()
+        self.assertEqual(p2_data["new_amount_paid"], 30000.0)
+        self.assertEqual(p2_data["new_amount_pending"], 0.0)
+        self.assertEqual(p2_data["new_status"], "Paid")
+
+        # 5. Check Complete Payment History
+        res_hist2 = self.client.get(f"/api/raw-materials/deals/{deal_id}/payments", headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res_hist2.status_code, 200)
+        h2 = res_hist2.get_json()
+        self.assertEqual(len(h2["payments"]), 3)
+        self.assertEqual(h2["deal"]["payment_status"], "Paid")
+        self.assertEqual(h2["deal"]["amount_pending"], 0.0)
+
+    def test_worker_payments_page_isolation(self):
+        """Worker Payroll endpoint must strictly return worker payroll data and summary without feed data."""
+        res = self.client.get("/api/workers/payroll?month=2026-10", headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("payroll", data)
+        self.assertIn("summary", data)
+        self.assertIn("total_workers", data["summary"])
+        self.assertIn("total_salary_due", data["summary"])
+        self.assertIn("total_paid", data["summary"])
+        self.assertIn("total_pending", data["summary"])
+        self.assertIn("total_advance_paid", data["summary"])
+        self.assertIn("total_extra_paid", data["summary"])
+
+        # Verify no feed or raw material fields leaked into worker payroll summary
+        self.assertNotIn("feed_reserves", data["summary"])
+        self.assertNotIn("raw_materials", data["summary"])
+        self.assertNotIn("suppliers", data["summary"])
+
 if __name__ == "__main__":
     unittest.main()
+
 

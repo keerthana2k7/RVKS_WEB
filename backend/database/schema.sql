@@ -160,7 +160,10 @@ CREATE TABLE IF NOT EXISTS raw_materials (
 CREATE TABLE IF NOT EXISTS raw_material_purchases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     purchase_code VARCHAR(30) UNIQUE NOT NULL,
+    deal_date DATE,
     purchase_date DATE NOT NULL,
+    expected_delivery_date DATE,
+    actual_delivery_date DATE,
     supplier_id INTEGER NOT NULL,
     material_id INTEGER NOT NULL,
     quantity DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
@@ -170,7 +173,12 @@ CREATE TABLE IF NOT EXISTS raw_material_purchases (
     transport_cost DECIMAL(10, 2) DEFAULT 0.00 CHECK (transport_cost >= 0),
     other_cost DECIMAL(10, 2) DEFAULT 0.00 CHECK (other_cost >= 0),
     total_cost DECIMAL(10, 2) NOT NULL CHECK (total_cost >= 0),
-    payment_status VARCHAR(20) NOT NULL DEFAULT 'Paid', -- 'Paid', 'Pending', 'Partial'
+    advance_paid DECIMAL(10, 2) DEFAULT 0.00 CHECK (advance_paid >= 0),
+    amount_paid DECIMAL(10, 2) DEFAULT 0.00 CHECK (amount_paid >= 0),
+    amount_pending DECIMAL(10, 2) DEFAULT 0.00,
+    payment_due_date DATE,
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Paid', 'Partially Paid', 'Pending'
+    payment_method VARCHAR(30) DEFAULT 'Bank Transfer',
     payment_date DATE,
     invoice_number VARCHAR(50),
     notes TEXT,
@@ -178,6 +186,22 @@ CREATE TABLE IF NOT EXISTS raw_material_purchases (
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
     FOREIGN KEY (material_id) REFERENCES raw_materials(id)
 );
+
+CREATE TABLE IF NOT EXISTS deal_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payment_code VARCHAR(30) UNIQUE NOT NULL,
+    deal_id INTEGER NOT NULL,
+    supplier_id INTEGER NOT NULL,
+    payment_date DATE NOT NULL,
+    payment_type VARCHAR(30) NOT NULL, -- 'Advance', 'Payment', 'Final Payment', 'Other'
+    amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
+    payment_method VARCHAR(30) NOT NULL DEFAULT 'Bank Transfer', -- 'Cash', 'UPI', 'Bank Transfer', 'Cheque'
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (deal_id) REFERENCES raw_material_purchases(id),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);
+
 
 CREATE TABLE IF NOT EXISTS raw_material_movements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
