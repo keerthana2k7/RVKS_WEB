@@ -1,0 +1,31 @@
+<!-- VIEW 3: DAILY WORKER ATTENDANCE -->
+<section id="view-attendance" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>📅</span> Daily Worker Attendance</h2>
+      <p>Select date and record daily attendance for all active farm workers.</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <input type="date" id="attendanceDateFilter" class="form-control" style="width: auto;" onchange="window.navigateTo('attendance')">
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table" id="tableAttendance">
+        <thead>
+          <tr>
+            <th>Worker ID</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>

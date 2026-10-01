@@ -1,0 +1,63 @@
+<!-- VIEW 17: FARM REPORTS & EXPORT -->
+<section id="view-reports" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>📈</span> Farm Reports & Export</h2>
+      <p>Comprehensive 360° analytics, financial statements, and CSV / Print Export.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn btn-secondary" onclick="window.printReport()">🖨️ Print / PDF</button>
+      <button class="btn btn-primary" onclick="window.exportReportCSV()">📥 Export CSV (Excel)</button>
+    </div>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="table-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="reportTypeSelect">Select Report Type</label>
+        <select id="reportTypeSelect" class="form-control" onchange="window.navigateTo('reports')">
+          <option value="complete">Complete Farm 360° Status</option>
+          <option value="workers">Worker & Payroll Report</option>
+          <option value="attendance">Worker Attendance Report</option>
+          <option value="birds">Bird Population & Mortality</option>
+          <option value="eggs">Egg Production & Sales</option>
+          <option value="raw_materials">Raw Material Purchases</option>
+          <option value="feed">Feed Production & Manufacturing</option>
+          <option value="financial">Financial Income & Expense Statement</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="reportFromDate">From Date</label>
+        <input type="date" id="reportFromDate" class="form-control" onchange="window.navigateTo('reports')">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="reportToDate">To Date</label>
+        <input type="date" id="reportToDate" class="form-control" onchange="window.navigateTo('reports')">
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Display Card -->
+  <div class="table-card" style="padding: 1.5rem;">
+    <div class="report-header-banner">
+      <h2 style="font-size: 1.5rem; color: var(--primary-400);">RVKS WEB</h2>
+      <h3 style="font-size: 1.15rem; color: #fff;" id="reportTitleDisplay">Farm Report</h3>
+      <p style="font-size: 0.85rem; color: var(--text-dim);">
+        Date Range: <span id="reportDateRangeDisplay">All Time</span> | Generated: <span id="reportGeneratedAt">-</span>
+      </p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table" id="tableReport">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Report Totals Display -->
+    <div id="reportTotalsDisplay" class="report-totals-display"></div>
+  </div>
+</section>

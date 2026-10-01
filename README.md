@@ -55,12 +55,14 @@ A production-grade, practical livestock and on-farm feed mill operations platfor
 
 ---
 
-## 🔐 Default Access Credentials
+## 🔐 Access Credentials (Admin / Farm Owner Only)
 
-| Role | Username | Password | Permissions |
+| Role | Username | Password | System Access Level |
 | :--- | :--- | :--- | :--- |
-| **Owner / Admin** | `admin` | `admin123` | Full access to farm settings, wages, financial reports, purchase rates, and audit trail. |
-| **Farm Worker** | `worker1` | `worker123` | Operations access: attendance, mortality log, egg production, feed usage. Wage and profit reports are hidden. |
+| **Farm Owner (Admin)** | `admin` | `admin123` | **Single System Administrator**: Complete control over livestock batches, feed mill, raw materials, inventory, worker records, payroll settlements, farm expenses, and financial balance. |
+
+> [!NOTE]
+> **Strict Access Control Requirement**: Only the Farm Owner (Admin) has system login credentials. There is **NO worker login or worker account system**. Workers exist purely as internal employee records created, edited, and monitored by the Farm Owner.
 
 ---
 
@@ -141,17 +143,56 @@ RVKS_WEB/
 │   │   └── test_api.py          # API integration and security tests
 │   └── app.py                   # Master Flask server & static asset host
 ├── frontend/
-│   ├── css/
-│   │   └── index.css            # Agricultural design system, dark/light theme, print layout
-│   ├── js/
-│   │   ├── api.js               # API client with token management & network interceptor
-│   │   ├── offline_sync.js      # IndexedDB queue & auto-sync manager
-│   │   ├── charts.js            # Interactive Chart.js visual analytics
-│   │   └── app.js               # Master SPA controller, modals & form handlers
-│   ├── icons/                   # PWA icons (192x192, 512x512)
-│   ├── manifest.json            # PWA manifest for Android installation
-│   ├── sw.js                    # Service worker for offline asset caching
-│   └── index.html               # Main responsive single-page application
+│   ├── pages/                   # Modular Page Views
+│   │   ├── login.html           # Dedicated Login Card & Quick-Role Fill
+│   │   ├── dashboard.html       # Live KPI Summary & Charts
+│   │   ├── workers.html         # Worker Directory & Actions
+│   │   ├── attendance.html      # Daily Attendance Marking Table
+│   │   ├── payments.html        # Wage Settlements & Payroll
+│   │   ├── batches.html         # Bird Batches & Shed Allocation
+│   │   ├── mortality.html       # Mortality Log & Alerts
+│   │   ├── eggs.html            # Egg Collection, Grading & Sales
+│   │   ├── suppliers.html       # Raw Material Suppliers
+│   │   ├── raw_materials.html   # Grain & Ingredient Reserves
+│   │   ├── purchases.html       # Supplier Purchase Invoices
+│   │   ├── feed_recipes.html    # Feed Formulations & Mash Ratios
+│   │   ├── feed_production.html # Feed Milling Batches & Cost/Kg
+│   │   ├── feed_stock.html      # Finished Feed Inventory
+│   │   ├── feed_usage.html      # Daily Feeding Distribution
+│   │   ├── expenses.html        # Operational Farm Expenses
+│   │   ├── income.html          # Revenue & Sales Dispatches
+│   │   ├── reports.html         # 360° Reports & CSV/PDF Export
+│   │   ├── audit.html           # System Audit Logs
+│   │   └── profile.html         # Farm Owner Settings & Access Control
+│   ├── components/              # Reusable Shared Components
+│   │   ├── navbar.html          # Header with Brand, Sync & User Status
+│   │   ├── sidebar.html         # 18-View Navigation Menu & Roles
+│   │   ├── footer.html          # Responsive Application Footer
+│   │   ├── modals.html          # 11 Operational Action Forms
+│   │   └── toast.html           # Toast Notification Container
+│   ├── css/                     # Modular CSS Stylesheets
+│   │   ├── style.css            # Tokens, Themes & Layout Fundamentals
+│   │   ├── components.css       # Buttons, Cards, Modals & Forms
+│   │   ├── pages.css            # Page-Specific Layouts & Charts
+│   │   ├── responsive.css       # Tablet, Mobile & Print Queries
+│   │   └── index.css            # Master Bundle (Backward Compatibility)
+│   ├── js/                      # Modular JavaScript Architecture
+│   │   ├── main.js              # Central App Router & Coordinator
+│   │   ├── components.js        # Component Loader & Event Delegator
+│   │   ├── auth.js              # Login, Role Gating & Permissions
+│   │   ├── dashboard.js         # Real-Time Dashboard KPI Loader
+│   │   ├── api.js               # REST Client & Token Interceptor
+│   │   ├── utils.js             # Date, Currency & Modal Helpers
+│   │   ├── charts.js            # Interactive Chart.js Visualizations
+│   │   ├── offline_sync.js      # IndexedDB Offline Sync Queue
+│   │   └── app.js               # Master Export (Backward Compatibility)
+│   ├── assets/                  # Media & Static Assets
+│   │   ├── icons/               # PWA Icons (192x192, 512x512)
+│   │   ├── images/              # Farm Visuals & Documentation Images
+│   │   └── fonts/               # Typography Assets
+│   ├── manifest.json            # PWA Manifest for Android Installation
+│   ├── sw.js                    # Service Worker for Offline Asset Caching
+│   └── index.html               # Streamlined SPA Shell & Layout Mounts
 ├── Dockerfile                   # Production Docker container build
 ├── docker-compose.yml           # Multi-platform Docker Compose deployment
 ├── requirements.txt             # Python backend dependencies

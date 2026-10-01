@@ -1,0 +1,733 @@
+<!-- Reusable Modals Component (Touch-Optimized Father-Friendly Forms) -->
+
+<!-- 1. Record Mortality Modal -->
+<div class="modal-backdrop" id="modalRecordMortality">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--danger-500);"><span>⚠️</span> Record Bird Mortality</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formRecordMortality">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="mortDate">Date</label>
+            <input type="date" id="mortDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="mortBatchSelect">Bird Batch</label>
+            <select id="mortBatchSelect" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="mortBirdCount">Number of Dead Birds</label>
+            <input type="number" id="mortBirdCount" class="form-control" min="1" placeholder="e.g. 5" required>
+          </div>
+          <div class="form-group">
+            <label for="mortReasonSelect">Reason / Symptom</label>
+            <select id="mortReasonSelect" class="form-control">
+              <option value="Disease">Disease / Infection</option>
+              <option value="Weakness" selected>Weakness / Natural</option>
+              <option value="Accident">Accident / Trap</option>
+              <option value="Unknown">Unknown</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="mortNotes">Notes / Isolation Details</label>
+          <input type="text" id="mortNotes" class="form-control" placeholder="Optional notes for veterinary record">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-danger">Save Mortality Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Record Egg Production Modal -->
+<div class="modal-backdrop" id="modalRecordEggs">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--amber-400);"><span>🥚</span> Record Egg Collection & Sales</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formRecordEggs">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eggDate">Date</label>
+            <input type="date" id="eggDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="eggBatchSelect">Bird Batch</label>
+            <select id="eggBatchSelect" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eggTotal">Total Eggs Collected</label>
+            <input type="number" id="eggTotal" class="form-control" min="1" placeholder="e.g. 2900" required>
+          </div>
+          <div class="form-group">
+            <label for="eggBroken">Broken Eggs</label>
+            <input type="number" id="eggBroken" class="form-control" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eggDamaged">Damaged Eggs</label>
+            <input type="number" id="eggDamaged" class="form-control" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="eggSold">Eggs Sold</label>
+            <input type="number" id="eggSold" class="form-control" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eggPrice">Selling Price (₹ per egg)</label>
+            <input type="number" id="eggPrice" class="form-control" step="0.10" value="5.50">
+          </div>
+          <div class="form-group">
+            <label for="eggNotes">Notes</label>
+            <input type="text" id="eggNotes" class="form-control" placeholder="Buyer / Tray packing notes">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Egg Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Produce Feed Modal -->
+<div class="modal-backdrop" id="modalProduceFeed">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: #3b82f6;"><span>⚙️</span> Manufacture Farm Feed</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formProduceFeed">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="feedProdDate">Date</label>
+            <input type="date" id="feedProdDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="feedProdRecipeSelect">Feed Recipe Formula</label>
+            <select id="feedProdRecipeSelect" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="feedProdTypeSelect">Feed Type</label>
+            <select id="feedProdTypeSelect" class="form-control" required>
+              <option value="Layer Feed">Layer Feed</option>
+              <option value="EDD Feed" selected>EDD Feed</option>
+              <option value="Chick Feed">Chick Feed</option>
+              <option value="Custom Feed">Custom Feed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="feedProdQty">Quantity to Produce (Kg)</label>
+            <input type="number" id="feedProdQty" class="form-control" min="50" step="50" value="1000" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="feedProdLabour">Labour Cost (₹)</label>
+            <input type="number" id="feedProdLabour" class="form-control" value="0">
+          </div>
+          <div class="form-group">
+            <label for="feedProdElectricity">Electricity / Milling Cost (₹)</label>
+            <input type="number" id="feedProdElectricity" class="form-control" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="feedProdNotes">Notes</label>
+          <input type="text" id="feedProdNotes" class="form-control" placeholder="Operator notes">
+        </div>
+        <div class="form-hint" style="color: var(--amber-400);">
+          ℹ️ The system will automatically check stock of Maize, Soy, Bran, and Minerals before milling.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Produce Feed Batch</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. Record Feed Usage Modal -->
+<div class="modal-backdrop" id="modalRecordFeedUsage">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--primary-400);"><span>🍽️</span> Record Flock Feed Feeding</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formRecordFeedUsage">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="feedUsageDate">Date</label>
+            <input type="date" id="feedUsageDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="feedUsageBatchSelect">Target Bird Batch</label>
+            <select id="feedUsageBatchSelect" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="feedUsageTypeSelect">Feed Type</label>
+            <select id="feedUsageTypeSelect" class="form-control" required>
+              <option value="EDD Feed" selected>EDD Feed</option>
+              <option value="Layer Feed">Layer Feed</option>
+              <option value="Chick Feed">Chick Feed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="feedUsageQty">Quantity Fed (Kg)</label>
+            <input type="number" id="feedUsageQty" class="form-control" min="1" step="5" placeholder="e.g. 350" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="feedUsageNotes">Notes</label>
+          <input type="text" id="feedUsageNotes" class="form-control" placeholder="Morning / Evening feeding shift">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Feeding Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. Raw Material Purchase Modal -->
+<div class="modal-backdrop" id="modalRecordPurchase">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: #8b5cf6;"><span>🛒</span> Purchase Raw Material</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formRecordPurchase">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purDate">Purchase Date</label>
+            <input type="date" id="purDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="purSupplierSelect">Supplier</label>
+            <select id="purSupplierSelect" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purMaterialSelect">Raw Material</label>
+            <select id="purMaterialSelect" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label for="purQty">Quantity (Kg)</label>
+            <input type="number" id="purQty" class="form-control" min="1" step="10" placeholder="e.g. 1000" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purRate">Rate per Unit (₹)</label>
+            <input type="number" id="purRate" class="form-control" step="0.10" placeholder="e.g. 25.00" required>
+          </div>
+          <div class="form-group">
+            <label for="purTransport">Transport Cost (₹)</label>
+            <input type="number" id="purTransport" class="form-control" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purOther">Other Expenses (₹)</label>
+            <input type="number" id="purOther" class="form-control" value="0">
+          </div>
+          <div class="form-group">
+            <label for="purStatusSelect">Payment Status</label>
+            <select id="purStatusSelect" class="form-control">
+              <option value="Paid" selected>Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purInvoice">Invoice Number</label>
+            <input type="text" id="purInvoice" class="form-control" placeholder="e.g. INV-9912">
+          </div>
+          <div class="form-group">
+            <label for="purNotes">Notes</label>
+            <input type="text" id="purNotes" class="form-control" placeholder="Vehicle no / Bags">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Purchase & Update Stock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6. Record Payment Modal -->
+<div class="modal-backdrop" id="modalRecordPayment">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: #f59e0b;"><span>💳</span> Record Worker Salary Payment</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formRecordPayment">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payWorkerSelect">Worker</label>
+            <select id="payWorkerSelect" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label for="payPeriod">Salary Period</label>
+            <input type="text" id="payPeriod" class="form-control" placeholder="e.g. Sep 2026" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payDate">Payment Date</label>
+            <input type="date" id="payDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="payAmount">Amount (₹)</label>
+            <input type="number" id="payAmount" class="form-control" step="10" placeholder="e.g. 15000" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payMethodSelect">Payment Method</label>
+            <select id="payMethodSelect" class="form-control">
+              <option value="Cash" selected>Cash</option>
+              <option value="UPI">UPI / GPay / PhonePe</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="payStatusSelect">Payment Status</label>
+            <select id="payStatusSelect" class="form-control">
+              <option value="Paid" selected>Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="payNotes">Notes</label>
+          <input type="text" id="payNotes" class="form-control" placeholder="Optional settlement note">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Wage Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 7. Add Expense Modal -->
+<div class="modal-backdrop" id="modalAddExpense">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: #ef4444;"><span>💸</span> Record Farm Expense</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formAddExpense">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expDate">Date</label>
+            <input type="date" id="expDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="expCategorySelect">Category</label>
+            <select id="expCategorySelect" class="form-control">
+              <option value="Electricity">Electricity / Power</option>
+              <option value="Medicine">Medicine & Vaccines</option>
+              <option value="Maintenance">Shed Maintenance</option>
+              <option value="Transport">Transport & Diesel</option>
+              <option value="Packaging">Egg Paper Trays & Packaging</option>
+              <option value="Water">Water Spares & Plumbing</option>
+              <option value="Equipment">Equipment & Tools</option>
+              <option value="Bird Purchase">Bird Purchase</option>
+              <option value="Other" selected>Other Miscellaneous</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="expDescription">Description</label>
+          <input type="text" id="expDescription" class="form-control" placeholder="e.g. Tractor diesel refill" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expAmount">Amount (₹)</label>
+            <input type="number" id="expAmount" class="form-control" min="1" placeholder="e.g. 2500" required>
+          </div>
+          <div class="form-group">
+            <label for="expMethodSelect">Payment Method</label>
+            <select id="expMethodSelect" class="form-control">
+              <option value="Cash" selected>Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="expPaidBy">Paid By</label>
+          <input type="text" id="expPaidBy" class="form-control" value="Owner">
+        </div>
+        <div class="form-group">
+          <label for="expNotes">Notes</label>
+          <input type="text" id="expNotes" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-danger">Save Farm Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 8. Add Worker Modal -->
+<div class="modal-backdrop" id="modalAddWorker">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--primary-400);"><span>👥</span> Add Farm Worker</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formAddWorker">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workerName">Worker Full Name</label>
+            <input type="text" id="workerName" class="form-control" placeholder="e.g. Selvam M" required>
+          </div>
+          <div class="form-group">
+            <label for="workerRole">Job Role</label>
+            <input type="text" id="workerRole" class="form-control" placeholder="e.g. Shed Hand" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workerPhone">Phone Number</label>
+            <input type="text" id="workerPhone" class="form-control" placeholder="e.g. 9842100000">
+          </div>
+          <div class="form-group">
+            <label for="workerDoj">Date of Joining</label>
+            <input type="date" id="workerDoj" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workerSalaryType">Salary Type</label>
+            <select id="workerSalaryType" class="form-control">
+              <option value="Monthly" selected>Monthly</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="workerSalaryAmount">Salary Amount (₹)</label>
+            <input type="number" id="workerSalaryAmount" class="form-control" placeholder="e.g. 15000">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workerPayMethod">Payment Method</label>
+            <select id="workerPayMethod" class="form-control">
+              <option value="Cash" selected>Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="workerAddress">Address / Village</label>
+            <input type="text" id="workerAddress" class="form-control" placeholder="Address">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="workerNotes">Notes</label>
+          <input type="text" id="workerNotes" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Worker Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 8b. Edit Worker Modal -->
+<div class="modal-backdrop" id="modalEditWorker">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--primary-400);"><span>✏️</span> Edit Worker Record</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formEditWorker">
+      <input type="hidden" id="editWorkerId">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editWorkerName">Worker Full Name</label>
+            <input type="text" id="editWorkerName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="editWorkerRole">Job Role</label>
+            <input type="text" id="editWorkerRole" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editWorkerPhone">Phone Number</label>
+            <input type="text" id="editWorkerPhone" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="editWorkerDoj">Date of Joining</label>
+            <input type="date" id="editWorkerDoj" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editWorkerSalaryType">Salary Type</label>
+            <select id="editWorkerSalaryType" class="form-control">
+              <option value="Monthly">Monthly</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editWorkerSalaryAmount">Salary Amount (₹)</label>
+            <input type="number" id="editWorkerSalaryAmount" class="form-control" step="0.01">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editWorkerPaymentStatus">Payment Status</label>
+            <select id="editWorkerPaymentStatus" class="form-control">
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editWorkerPaymentDate">Payment Date</label>
+            <input type="date" id="editWorkerPaymentDate" class="form-control">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editWorkerPayMethod">Payment Method</label>
+            <select id="editWorkerPayMethod" class="form-control">
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editWorkerStatus">Record Status</label>
+            <select id="editWorkerStatus" class="form-control">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editWorkerAddress">Address / Village</label>
+          <input type="text" id="editWorkerAddress" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="editWorkerNotes">Notes</label>
+          <input type="text" id="editWorkerNotes" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Worker Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 8c. Worker History & Profile Modal -->
+<div class="modal-backdrop" id="modalWorkerHistory">
+  <div class="modal-dialog" style="max-width: 780px;">
+    <div class="modal-header">
+      <h3 style="color: var(--primary-400);"><span>📜</span> Worker Record & History</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body" id="workerHistoryContent" style="max-height: 75vh; overflow-y: auto;">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- 9. Add Bird Batch Modal -->
+<div class="modal-backdrop" id="modalAddBatch">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: var(--amber-400);"><span>🏷️</span> Add Bird Batch</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formAddBatch">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="batchName">Batch Name</label>
+            <input type="text" id="batchName" class="form-control" placeholder="e.g. EDD Batch 4" required>
+          </div>
+          <div class="form-group">
+            <label for="batchBirdType">Bird Type</label>
+            <select id="batchBirdType" class="form-control">
+              <option value="EDD" selected>EDD</option>
+              <option value="Layer">Layer</option>
+              <option value="Chick">Chick</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="batchDate">Arrival Date</label>
+            <input type="date" id="batchDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="batchQty">Initial Bird Quantity</label>
+            <input type="number" id="batchQty" class="form-control" min="1" placeholder="e.g. 3000" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="batchShed">Shed / Location</label>
+            <input type="text" id="batchShed" class="form-control" placeholder="e.g. Shed 4">
+          </div>
+          <div class="form-group">
+            <label for="batchAge">Age (Weeks)</label>
+            <input type="number" id="batchAge" class="form-control" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="batchSupplier">Hatchery / Source Supplier</label>
+          <input type="text" id="batchSupplier" class="form-control" placeholder="Supplier name">
+        </div>
+        <div class="form-group">
+          <label for="batchNotes">Notes</label>
+          <input type="text" id="batchNotes" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Flock Batch</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 10. Add Supplier Modal -->
+<div class="modal-backdrop" id="modalAddSupplier">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="color: #38bdf8;"><span>🚚</span> Add Feed Material Supplier</h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="formAddSupplier">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="supName">Supplier / Company Name</label>
+          <input type="text" id="supName" class="form-control" placeholder="e.g. Salem Agro Grains" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="supPhone">Phone Number</label>
+            <input type="text" id="supPhone" class="form-control" placeholder="Phone">
+          </div>
+          <div class="form-group">
+            <label for="supAddress">Address / Town</label>
+            <input type="text" id="supAddress" class="form-control" placeholder="Town / Market">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="supMaterials">Materials Supplied (Comma Separated)</label>
+          <input type="text" id="supMaterials" class="form-control" placeholder="e.g. Maize, Soybean Meal, DORB">
+        </div>
+        <div class="form-group">
+          <label for="supNotes">Notes</label>
+          <input type="text" id="supNotes" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Supplier</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 11. Supplier History Details Modal -->
+<div class="modal-backdrop" id="modalSupplierHistory">
+  <div class="modal-dialog" style="max-width: 750px;">
+    <div class="modal-header">
+      <h3><span>🚚</span> Supplier History: <span id="supHistoryName" style="color: var(--primary-400);">-</span></h3>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="kpi-card" style="flex: 1; padding: 1rem;">
+          <div class="kpi-title">Total Purchases</div>
+          <div class="kpi-value" id="supHistoryTotalSpent" style="font-size: 1.5rem; color: var(--primary-400);">₹0</div>
+        </div>
+        <div class="kpi-card" style="flex: 1; padding: 1rem;">
+          <div class="kpi-title">Pending Payments</div>
+          <div class="kpi-value" id="supHistoryPending" style="font-size: 1.5rem; color: var(--danger-500);">₹0</div>
+        </div>
+      </div>
+
+      <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-muted);">Materials Breakdown:</h4>
+      <div id="supHistoryMaterials" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem;"></div>
+
+      <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-muted);">Purchase Transactions:</h4>
+      <div class="table-responsive">
+        <table class="data-table" id="tableSupplierPurchases">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Material</th>
+              <th>Quantity</th>
+              <th>Rate</th>
+              <th>Total Cost</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+    </div>
+  </div>
+</div>

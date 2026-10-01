@@ -1,0 +1,35 @@
+<!-- VIEW 15: FARM EXPENSES -->
+<section id="view-expenses" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>💸</span> Farm Expenses</h2>
+      <p>Operational costs: salaries, grains, power, medicine, tractor diesel, and repairs.</p>
+    </div>
+    <button class="btn btn-primary" data-open-modal="modalAddExpense">+ Add Expense</button>
+  </div>
+
+  <div class="kpi-card" style="margin-bottom: 1.5rem; max-width: 320px;">
+    <div class="kpi-title">Total Farm Expenses</div>
+    <div class="kpi-value" id="expensesTotalAmount" style="color: var(--danger-500);">₹0</div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table" id="tableExpenses">
+        <thead>
+          <tr>
+            <th>Expense ID</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Payment Method</th>
+            <th>Paid By</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,44 @@
+<!-- ADMIN SETTINGS & SECURITY (FARM OWNER ONLY) -->
+<section id="view-profile" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>⚙️</span> Farm Owner Settings & Access Control</h2>
+      <p>System security settings, admin authentication profile, and single-owner control panel.</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+    <div class="kpi-card">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Farm Owner Account</span>
+        <div class="kpi-icon">🔐</div>
+      </div>
+      <div style="margin-top: 1rem;">
+        <p style="font-size: 1.15rem; font-weight: 700; color: #fff;" id="profileFullName">Farm Owner (Admin)</p>
+        <p style="color: var(--amber-400); font-weight: 600; font-size: 0.95rem; margin-top: 0.25rem;" id="profileRole">Owner / Administrator (Full System Control)</p>
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+          <p style="font-size: 0.85rem; color: var(--text-dim);">Username: <strong id="profileUsername" style="color: var(--text-main);">admin</strong></p>
+          <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.35rem;">Access Level: <strong style="color: var(--primary-300);">Single Master Administrator</strong></p>
+          <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.35rem;">Status: <span class="badge success">Active</span></p>
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button class="btn btn-secondary btn-sm" onclick="window.logout()">Sign Out of Admin Session</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Access Control Architecture</span>
+        <div class="kpi-icon">🛡️</div>
+      </div>
+      <div style="margin-top: 1rem; font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.6rem;">
+        <div>👑 <strong>Admin / Farm Owner Only:</strong> The single authorized user role for the entire platform.</div>
+        <div>👥 <strong>Workers Are Data Records:</strong> Farm workers exist purely as employee records managed by the owner (no worker logins, no worker portals).</div>
+        <div>🔒 <strong>Protected API Endpoints:</strong> All backend operations verify Owner/Admin authentication tokens before granting access.</div>
+        <div>📊 <strong>Full Operations Control:</strong> Flocks, mortality, egg production, feed milling, purchases, wages, and finances.</div>
+        <div>🛡️ <strong>Permanent Audit Trail:</strong> Every addition, modification, and settlement is logged for owner verification.</div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,45 @@
+<!-- VIEW 4: WORKER PAYROLL PAYMENTS -->
+<section id="view-payments" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>💳</span> Worker Payroll Payments</h2>
+      <p>Record and monitor wages, salary history, and pending settlements.</p>
+    </div>
+    <button class="btn btn-primary" data-open-modal="modalRecordPayment">+ Record Payment</button>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
+    <div class="kpi-card">
+      <div class="kpi-title">Total Wages Paid</div>
+      <div class="kpi-value" id="paymentsTotalPaid" style="color: var(--primary-400);">₹0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Total Pending Payments</div>
+      <div class="kpi-value" id="paymentsTotalPending" style="color: var(--amber-400);">₹0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Last Payment Settled</div>
+      <div class="kpi-value" id="paymentsLastDate" style="font-size: 1.4rem;">-</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table" id="tablePayments">
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>Worker</th>
+            <th>Salary Period</th>
+            <th>Payment Date</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>

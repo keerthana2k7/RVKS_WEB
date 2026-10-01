@@ -1,0 +1,51 @@
+<!-- VIEW 7: EGG PRODUCTION & SALES -->
+<section id="view-eggs" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>🥚</span> Egg Production & Sales</h2>
+      <p>Daily egg collection, grading (good / broken / damaged), sales dispatch, and income.</p>
+    </div>
+    <button class="btn btn-primary" data-open-modal="modalRecordEggs">+ Record Egg Collection</button>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.5rem;">
+    <div class="kpi-card">
+      <div class="kpi-title">Today's Eggs</div>
+      <div class="kpi-value" id="eggTodayCount">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">This Week's Eggs</div>
+      <div class="kpi-value" id="eggWeekCount">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">This Month's Eggs</div>
+      <div class="kpi-value" id="eggMonthCount">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Month Egg Income</div>
+      <div class="kpi-value" id="eggMonthIncome" style="color: var(--primary-400);">₹0</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table" id="tableEggs">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Batch</th>
+            <th>Total Collected</th>
+            <th>Good Eggs</th>
+            <th>Broken / Damaged</th>
+            <th>Eggs Sold</th>
+            <th>Remaining</th>
+            <th>Rate</th>
+            <th>Income</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>

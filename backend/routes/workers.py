@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 from database.db import get_db, log_audit
-from routes.auth import login_required, admin_required
+from routes.auth import admin_required, login_required
 
 workers_bp = Blueprint("workers", __name__, url_prefix="/api/workers")
 
-# ----------------- WORKERS CRUD ----------------- #
+# ----------------- WORKERS CRUD (ADMIN ONLY) ----------------- #
 
 @workers_bp.route("", methods=["GET"])
-@login_required
+@admin_required
 def get_workers():
     status = request.args.get("status")
     search = request.args.get("search", "").strip()
@@ -33,6 +33,46 @@ def get_workers():
         
     return jsonify({"workers": workers})
 
+@workers_bp.route("/<int:worker_id>", methods=["GET"])
+@admin_required
+def get_worker_detail(worker_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM workers WHERE id = ?", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker record not found"}), 404
+            
+        # Attendance summary
+        cursor.execute("""
+            SELECT 
+                COUNT(CASE WHEN status = 'Present' THEN 1 END) as present_days,
+                COUNT(CASE WHEN status = 'Absent' THEN 1 END) as absent_days,
+                COUNT(CASE WHEN status = 'Half Day' THEN 1 END) as half_days,
+                COUNT(CASE WHEN status = 'Leave' THEN 1 END) as leave_days,
+                COUNT(id) as total_attendance_marked
+            FROM attendance
+            WHERE worker_id = ?
+        """, (worker_id,))
+        att_summary = cursor.fetchone()
+        
+        # Payment summary
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'Paid' THEN amount END), 0) as total_paid,
+                COALESCE(SUM(CASE WHEN status = 'Pending' THEN amount END), 0) as total_pending,
+                MAX(CASE WHEN status = 'Paid' THEN payment_date END) as last_payment_date
+            FROM worker_payments
+            WHERE worker_id = ?
+        """, (worker_id,))
+        pay_summary = cursor.fetchone()
+        
+    return jsonify({
+        "worker": worker,
+        "attendance_summary": att_summary,
+        "payment_summary": pay_summary
+    })
+
 @workers_bp.route("", methods=["POST"])
 @admin_required
 def create_worker():
@@ -44,6 +84,8 @@ def create_worker():
     salary_amount = float(data.get("salary_amount", 0.0))
     phone = data.get("phone", "").strip()
     address = data.get("address", "").strip()
+    payment_status = data.get("payment_status", "Pending")
+    payment_date = data.get("payment_date")
     payment_method = data.get("payment_method", "Cash")
     notes = data.get("notes", "").strip()
     
@@ -57,14 +99,14 @@ def create_worker():
         worker_code = f"WRK-{next_num:03d}"
         
         cursor.execute("""
-            INSERT INTO workers (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_method, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)
-        """, (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_method, notes))
+            INSERT INTO workers (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_status, payment_date, payment_method, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)
+        """, (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_status, payment_date, payment_method, notes))
         
         worker_id = cursor.lastrowid
-        log_audit("Worker Added", "Workers", worker_code, f"Added worker {name} ({job_role})", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
+        log_audit("Worker Added", "Workers", worker_code, f"Added worker record {name} ({job_role})", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
         
-    return jsonify({"message": f"Worker {name} ({worker_code}) added successfully", "worker_id": worker_id, "worker_code": worker_code}), 201
+    return jsonify({"message": f"Worker record {name} ({worker_code}) added successfully", "worker_id": worker_id, "worker_code": worker_code}), 201
 
 @workers_bp.route("/<int:worker_id>", methods=["PUT"])
 @admin_required
@@ -74,9 +116,13 @@ def update_worker(worker_id):
     job_role = data.get("job_role", "").strip()
     phone = data.get("phone", "").strip()
     address = data.get("address", "").strip()
+    date_of_joining = data.get("date_of_joining")
     salary_type = data.get("salary_type", "Monthly")
     salary_amount = float(data.get("salary_amount", 0.0))
+    payment_status = data.get("payment_status", "Pending")
+    payment_date = data.get("payment_date")
     payment_method = data.get("payment_method", "Cash")
+    status = data.get("status", "Active")
     notes = data.get("notes", "").strip()
     
     if not name or not job_role:
@@ -86,13 +132,33 @@ def update_worker(worker_id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE workers 
-            SET name = ?, job_role = ?, phone = ?, address = ?, salary_type = ?, salary_amount = ?, payment_method = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+            SET name = ?, job_role = ?, phone = ?, address = ?, date_of_joining = COALESCE(?, date_of_joining),
+                salary_type = ?, salary_amount = ?, payment_status = ?, payment_date = ?, payment_method = ?,
+                status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (name, job_role, phone, address, salary_type, salary_amount, payment_method, notes, worker_id))
+        """, (name, job_role, phone, address, date_of_joining, salary_type, salary_amount, payment_status, payment_date, payment_method, status, notes, worker_id))
         
         log_audit("Worker Updated", "Workers", worker_id, f"Updated details for worker {name}", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
         
-    return jsonify({"message": "Worker updated successfully"})
+    return jsonify({"message": f"Worker record {name} updated successfully"})
+
+@workers_bp.route("/<int:worker_id>", methods=["DELETE"])
+@admin_required
+def delete_worker(worker_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, worker_code FROM workers WHERE id = ?", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker record not found"}), 404
+            
+        cursor.execute("DELETE FROM attendance WHERE worker_id = ?", (worker_id,))
+        cursor.execute("DELETE FROM worker_payments WHERE worker_id = ?", (worker_id,))
+        cursor.execute("DELETE FROM workers WHERE id = ?", (worker_id,))
+        
+        log_audit("Worker Deleted", "Workers", worker["worker_code"], f"Deleted worker record {worker['name']} ({worker['worker_code']})", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
+        
+    return jsonify({"message": f"Worker {worker['name']} ({worker['worker_code']}) deleted successfully"})
 
 @workers_bp.route("/<int:worker_id>/status", methods=["PATCH"])
 @admin_required
@@ -109,10 +175,53 @@ def toggle_worker_status(worker_id):
         
     return jsonify({"message": f"Worker marked as {new_status}"})
 
-# ----------------- ATTENDANCE ----------------- #
+@workers_bp.route("/<int:worker_id>/history", methods=["GET"])
+@admin_required
+def get_worker_history(worker_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM workers WHERE id = ?", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker not found"}), 404
+            
+        cursor.execute("SELECT * FROM attendance WHERE worker_id = ? ORDER BY date DESC LIMIT 60", (worker_id,))
+        attendance_logs = cursor.fetchall()
+        
+        cursor.execute("SELECT * FROM worker_payments WHERE worker_id = ? ORDER BY payment_date DESC, id DESC", (worker_id,))
+        payments = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT 
+                COUNT(CASE WHEN status = 'Present' THEN 1 END) as present_days,
+                COUNT(CASE WHEN status = 'Absent' THEN 1 END) as absent_days,
+                COUNT(CASE WHEN status = 'Half Day' THEN 1 END) as half_days,
+                COUNT(CASE WHEN status = 'Leave' THEN 1 END) as leave_days,
+                COUNT(id) as total_days
+            FROM attendance WHERE worker_id = ?
+        """, (worker_id,))
+        att_stats = cursor.fetchone()
+        
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'Paid' THEN amount END), 0) as total_paid,
+                COALESCE(SUM(CASE WHEN status = 'Pending' THEN amount END), 0) as total_pending
+            FROM worker_payments WHERE worker_id = ?
+        """, (worker_id,))
+        pay_stats = cursor.fetchone()
+        
+    return jsonify({
+        "worker": worker,
+        "attendance": attendance_logs,
+        "payments": payments,
+        "attendance_stats": att_stats,
+        "payment_stats": pay_stats
+    })
+
+# ----------------- ATTENDANCE (ADMIN ONLY) ----------------- #
 
 @workers_bp.route("/attendance", methods=["GET"])
-@login_required
+@admin_required
 def get_attendance():
     date = request.args.get("date", datetime.now().strftime("%Y-%m-%d"))
     with get_db() as conn:
@@ -131,7 +240,7 @@ def get_attendance():
     return jsonify({"date": date, "records": records})
 
 @workers_bp.route("/attendance", methods=["POST"])
-@login_required
+@admin_required
 def mark_single_attendance():
     data = request.get_json() or {}
     worker_id = data.get("worker_id")
@@ -163,7 +272,7 @@ def mark_single_attendance():
     return jsonify({"message": "Attendance recorded successfully"})
 
 @workers_bp.route("/attendance/bulk", methods=["POST"])
-@login_required
+@admin_required
 def mark_bulk_attendance():
     data = request.get_json() or {}
     date = data.get("date", datetime.now().strftime("%Y-%m-%d"))
@@ -196,7 +305,7 @@ def mark_bulk_attendance():
     return jsonify({"message": f"Successfully updated attendance for {len(records)} workers on {date}"})
 
 @workers_bp.route("/attendance/stats", methods=["GET"])
-@login_required
+@admin_required
 def get_attendance_stats():
     month = request.args.get("month", datetime.now().strftime("%Y-%m"))
     with get_db() as conn:
@@ -223,7 +332,7 @@ def get_attendance_stats():
             
     return jsonify({"month": month, "stats": stats})
 
-# ----------------- PAYMENTS ----------------- #
+# ----------------- PAYMENTS (ADMIN ONLY) ----------------- #
 
 @workers_bp.route("/payments", methods=["GET"])
 @admin_required
@@ -297,10 +406,18 @@ def record_payment():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (payment_code, worker_id, salary_period, payment_date, amount, payment_method, status, notes))
         
+        # Update worker's latest payment status and payment date
+        cursor.execute("""
+            UPDATE workers 
+            SET payment_status = ?, payment_date = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (status, payment_date, worker_id))
+        
         # If marked as paid, record automatically in expenses table
         if status == "Paid":
             cursor.execute("SELECT name FROM workers WHERE id = ?", (worker_id,))
-            w_name = cursor.fetchone()["name"]
+            w_row = cursor.fetchone()
+            w_name = w_row["name"] if w_row else f"Worker #{worker_id}"
             cursor.execute("""
                 INSERT INTO expenses (expense_code, date, category, description, amount, payment_method, paid_by, reference_id, notes)
                 VALUES (?, ?, 'Worker Salary', ?, ?, ?, 'Owner', ?, ?)

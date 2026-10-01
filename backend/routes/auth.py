@@ -55,7 +55,11 @@ def login_required(f):
         
         user_data = verify_token(token)
         if not user_data:
-            return jsonify({"error": "Authentication required. Please log in."}), 401
+            return jsonify({"error": "Admin authentication required. Please log in as Farm Owner / Admin."}), 401
+        
+        # Enforce that ONLY Farm Owner / Admin can access protected endpoints
+        if user_data.get("role") not in ("owner_admin", "admin"):
+            return jsonify({"error": "Access denied. Only Farm Owner / Admin can access this system."}), 403
         
         g.user = user_data
         return f(*args, **kwargs)
@@ -73,9 +77,10 @@ def admin_required(f):
         
         user_data = verify_token(token)
         if not user_data:
-            return jsonify({"error": "Authentication required."}), 401
-        if user_data.get("role") != "owner_admin":
-            return jsonify({"error": "Access denied. Owner/Admin privilege required."}), 403
+            return jsonify({"error": "Admin authentication required. Please log in as Farm Owner / Admin."}), 401
+        
+        if user_data.get("role") not in ("owner_admin", "admin"):
+            return jsonify({"error": "Access denied. Only Farm Owner / Admin can access this system."}), 403
         
         g.user = user_data
         return f(*args, **kwargs)
@@ -88,35 +93,46 @@ def login():
     password = data.get("password", "")
     
     if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+        return jsonify({"error": "Admin Username/Email and Password are required"}), 400
     
     hashed = hash_password(password)
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, username, full_name, role, status FROM users WHERE username = ? AND password_hash = ?",
-            (username, hashed)
+            "SELECT id, username, full_name, role, status FROM users WHERE (username = ? OR LOWER(username) = LOWER(?)) AND password_hash = ?",
+            (username, username, hashed)
         )
         user = cursor.fetchone()
         
         if not user:
-            return jsonify({"error": "Invalid username or password"}), 401
+            return jsonify({"error": "Invalid credentials. Admin access only."}), 401
+            
+        # STRICT ADMIN-ONLY: reject any non-admin account immediately
+        if user.get("role") not in ("owner_admin", "admin"):
+            return jsonify({"error": "Access denied. Only Farm Owner / Admin has access to this system. Workers do not have login accounts."}), 403
+            
         if user["status"] != "active":
-            return jsonify({"error": "Account is deactivated. Contact farm owner."}), 403
+            return jsonify({"error": "Admin account is deactivated."}), 403
         
         token = create_token(user["id"], user["username"], user["role"])
-        log_audit("User Login", "Auth", user["id"], f"Logged in from {request.remote_addr}", user_id=user["id"], username=user["username"], conn=conn)
+        log_audit("Admin Login", "Auth", user["id"], f"Farm Owner logged in from {request.remote_addr}", user_id=user["id"], username=user["username"], conn=conn)
         
         return jsonify({
-            "message": "Login successful",
+            "message": "Admin authentication successful",
             "token": token,
             "user": {
                 "id": user["id"],
                 "username": user["username"],
                 "full_name": user["full_name"],
-                "role": user["role"]
+                "role": "owner_admin"
             }
         })
+
+@auth_bp.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    log_audit("Admin Logout", "Auth", g.user.get("user_id"), "Admin logged out", user_id=g.user.get("user_id"), username=g.user.get("username"))
+    return jsonify({"message": "Logged out successfully"})
 
 @auth_bp.route("/me", methods=["GET"])
 @login_required
@@ -126,5 +142,15 @@ def me():
         cursor.execute("SELECT id, username, full_name, role, status, created_at FROM users WHERE id = ?", (g.user["user_id"],))
         user = cursor.fetchone()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "Admin user not found"}), 404
         return jsonify({"user": user})
+
+@auth_bp.route("/status", methods=["GET"])
+@login_required
+def status():
+    return jsonify({
+        "status": "authenticated",
+        "role": "owner_admin",
+        "username": g.user.get("username"),
+        "user_id": g.user.get("user_id")
+    })

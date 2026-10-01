@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'worker', -- 'owner_admin' or 'worker'
+    role VARCHAR(20) NOT NULL DEFAULT 'owner_admin', -- STRICTLY 'owner_admin' (Admin / Farm Owner ONLY)
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS workers (
     job_role VARCHAR(100) NOT NULL,
     salary_type VARCHAR(20) NOT NULL DEFAULT 'Monthly', -- 'Daily', 'Weekly', 'Monthly'
     salary_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Paid', 'Pending', 'Partial'
+    payment_date DATE,
     payment_method VARCHAR(50) DEFAULT 'Cash',
     status VARCHAR(20) NOT NULL DEFAULT 'Active', -- 'Active', 'Inactive' (Soft deletion)
     notes TEXT,

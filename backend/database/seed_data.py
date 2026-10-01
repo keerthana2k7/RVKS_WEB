@@ -24,11 +24,9 @@ def seed():
 
         print("[SEED] Seeding realistic farm data...")
 
-        # 1. Users
+        # 1. Users (Admin / Farm Owner ONLY - Workers do not have user accounts)
         users = [
-            ("admin", hash_password("admin123"), "Farm Owner (Admin)", "owner_admin"),
-            ("worker1", hash_password("worker123"), "Murugan (Supervisor)", "worker"),
-            ("worker2", hash_password("worker123"), "Priya (Egg Collector)", "worker")
+            ("admin", hash_password("admin123"), "Farm Owner (Admin)", "owner_admin")
         ]
         cursor.executemany(
             "INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)",
@@ -85,17 +83,17 @@ def seed():
                 VALUES (?, ?, 'Mortality', ?, (SELECT current_quantity FROM bird_batches WHERE id = ?), 'MORT', ?)
             """, (m[1], m[0], -m[3], m[1], m[5]))
 
-        # 6. Workers
+        # 6. Workers (Data records managed by Admin ONLY)
         workers = [
-            ("WRK-001", "Murugan K", "9842111222", "12 Farm Road, Rasipuram", "2024-01-10", "Farm Supervisor", "Monthly", 18000.00, "Bank Transfer", "Active", "Overall supervisor and feed master"),
-            ("WRK-002", "Selvam R", "9842133444", "45 North Street, Namakkal", "2024-03-15", "Feed Mill Operator", "Monthly", 15000.00, "UPI", "Active", "Operates feed grinding and mixer units"),
-            ("WRK-003", "Priya S", "9842155666", "7 West Kadu, Rasipuram", "2024-06-01", "Egg Collector & Grader", "Monthly", 12000.00, "Cash", "Active", "Egg collection, grading and tray packing"),
-            ("WRK-004", "Ramesh P", "9842177888", "18 Perumal Kovil St, Puduchatram", "2025-02-10", "Shed Caretaker", "Daily", 550.00, "Cash", "Active", "Litter management and water inspection"),
-            ("WRK-005", "Kumar M", "9842199000", "88 East Street, Rasipuram", "2025-05-20", "General Farm Hand", "Daily", 500.00, "Cash", "Active", "Unloading grain bags and cleaning")
+            ("WRK-001", "Murugan K", "9842111222", "12 Farm Road, Rasipuram", "2024-01-10", "Farm Supervisor", "Monthly", 18000.00, "Paid", "2026-09-02", "Bank Transfer", "Active", "Overall supervisor and feed master"),
+            ("WRK-002", "Selvam R", "9842133444", "45 North Street, Namakkal", "2024-03-15", "Feed Mill Operator", "Monthly", 15000.00, "Paid", "2026-09-03", "UPI", "Active", "Operates feed grinding and mixer units"),
+            ("WRK-003", "Priya S", "9842155666", "7 West Kadu, Rasipuram", "2024-06-01", "Egg Collector & Grader", "Monthly", 12000.00, "Paid", "2026-09-03", "Cash", "Active", "Egg collection, grading and tray packing"),
+            ("WRK-004", "Ramesh P", "9842177888", "18 Perumal Kovil St, Puduchatram", "2025-02-10", "Shed Caretaker", "Daily", 550.00, "Paid", "2026-09-08", "Cash", "Active", "Litter management and water inspection"),
+            ("WRK-005", "Kumar M", "9842199000", "88 East Street, Rasipuram", "2025-05-20", "General Farm Hand", "Daily", 500.00, "Paid", "2026-09-15", "Cash", "Active", "Unloading grain bags and cleaning")
         ]
         cursor.executemany("""
-            INSERT INTO workers (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_method, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO workers (worker_code, name, phone, address, date_of_joining, job_role, salary_type, salary_amount, payment_status, payment_date, payment_method, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, workers)
 
         # 7. Attendance for last 3 days

@@ -102,5 +102,12 @@ export const Api = {
       method: "PATCH",
       body: JSON.stringify(body),
     });
+  },
+
+  delete(endpoint, body = {}) {
+    return this.request(endpoint, {
+      method: "DELETE",
+      body: JSON.stringify(body),
+    });
   }
 };

@@ -1,0 +1,53 @@
+<!-- VIEW 2: WORKER MANAGEMENT (ADMIN ONLY - WORKERS ARE RECORDS ONLY) -->
+<section id="view-workers" class="view-section">
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>👥</span> Worker Management</h2>
+      <p>Farm employee records directory. Add, update, view attendance history, track wages, and manage status.</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button class="btn btn-primary" data-open-modal="modalAddWorker">+ Add Worker Record</button>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="table-card" style="margin-bottom: 1rem; padding: 0.75rem 1.25rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <div style="display: flex; gap: 0.75rem; flex: 1; min-width: 260px;">
+        <input type="text" id="workerSearchInput" class="form-control" placeholder="Search by name, code, role, or phone..." oninput="window.filterWorkers()">
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="workerStatusFilter" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0;">Status:</label>
+        <select id="workerStatusFilter" class="form-control" style="width: auto;" onchange="window.filterWorkers()">
+          <option value="">All Workers</option>
+          <option value="Active" selected>Active Only</option>
+          <option value="Inactive">Inactive Only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table" id="tableWorkers">
+        <thead>
+          <tr>
+            <th>Worker ID</th>
+            <th>Name</th>
+            <th>Job Role</th>
+            <th>Contact & Address</th>
+            <th>Joining Date</th>
+            <th>Salary</th>
+            <th>Payment Status</th>
+            <th>Last Paid</th>
+            <th>Status</th>
+            <th style="min-width: 220px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic worker rows loaded by main.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

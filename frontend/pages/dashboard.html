@@ -1,0 +1,173 @@
+<!-- VIEW 1: FARM OPERATIONAL DASHBOARD -->
+<section id="view-dashboard" class="view-section">
+  
+  <div class="page-header">
+    <div class="page-title-area">
+      <h2><span>📊</span> Farm Operational Dashboard</h2>
+      <p>Real-time livestock monitoring, feed reserves, production metrics, and financial balance.</p>
+    </div>
+  </div>
+
+  <!-- Alert Notifications Banner Area -->
+  <div id="dashboardAlerts" class="alerts-container"></div>
+
+  <!-- Father-Friendly Large Quick Actions Bar -->
+  <div class="quick-actions-bar">
+    <div class="quick-actions-header">
+      <h3><span>⚡</span> Quick Farm Actions (One-Click Forms)</h3>
+      <span style="font-size: 0.8rem; color: var(--text-dim);">Designed for fast on-site farm entry</span>
+    </div>
+    <div class="quick-buttons-grid">
+      <button class="btn-quick-action" data-open-modal="modalRecordMortality">
+        <span class="action-icon" style="color: var(--danger-500);">⚠️</span> Record Mortality
+      </button>
+      <button class="btn-quick-action" data-open-modal="modalRecordEggs">
+        <span class="action-icon" style="color: var(--amber-400);">🥚</span> Record Eggs
+      </button>
+      <button class="btn-quick-action" onclick="window.navigateTo('attendance')">
+        <span class="action-icon" style="color: var(--primary-400);">📅</span> Mark Attendance
+      </button>
+      <button class="btn-quick-action" data-open-modal="modalProduceFeed">
+        <span class="action-icon" style="color: #3b82f6;">⚙️</span> Produce Feed
+      </button>
+      <button class="btn-quick-action" data-open-modal="modalRecordFeedUsage">
+        <span class="action-icon" style="color: #10b981;">🍽️</span> Record Feed Usage
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalRecordPurchase">
+        <span class="action-icon" style="color: #8b5cf6;">🛒</span> Material Purchase
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalRecordPayment">
+        <span class="action-icon" style="color: #f59e0b;">💳</span> Record Payment
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalAddExpense">
+        <span class="action-icon" style="color: #ef4444;">💸</span> Add Expense
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalAddWorker">
+        <span class="action-icon" style="color: #6ee7b7;">👥</span> Add Worker
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalAddBatch">
+        <span class="action-icon" style="color: #fbbf24;">🏷️</span> Add Bird Batch
+      </button>
+      <button class="btn-quick-action admin-only" data-open-modal="modalAddSupplier">
+        <span class="action-icon" style="color: #38bdf8;">🚚</span> Add Supplier
+      </button>
+    </div>
+  </div>
+
+  <!-- BIRD SUMMARY CARDS -->
+  <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Flock Bird Populations (Live Database Count)</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Total Flock</span><div class="kpi-icon">🐔</div></div>
+      <div class="kpi-value" id="kpiTotalBirds">0</div>
+      <div class="kpi-subtext">All active birds in farm sheds</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Total Chicks</span><div class="kpi-icon">🐣</div></div>
+      <div class="kpi-value" id="kpiChickBirds">0</div>
+      <div class="kpi-subtext">Young growing chick flock</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Total Layers</span><div class="kpi-icon">🪺</div></div>
+      <div class="kpi-value" id="kpiLayerBirds">0</div>
+      <div class="kpi-subtext">Commercial layer hens</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Total EDD Birds</span><div class="kpi-icon">🐓</div></div>
+      <div class="kpi-value" id="kpiEddBirds">0</div>
+      <div class="kpi-subtext highlight">High-yield EDD breeds</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">EDD Batch 1</span><div class="kpi-icon">1️⃣</div></div>
+      <div class="kpi-value" id="kpiEddBatch1">0</div>
+      <div class="kpi-subtext">Shed 1 - East</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">EDD Batch 2</span><div class="kpi-icon">2️⃣</div></div>
+      <div class="kpi-value" id="kpiEddBatch2">0</div>
+      <div class="kpi-subtext">Shed 2 - Central</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">EDD Batch 3</span><div class="kpi-icon">3️⃣</div></div>
+      <div class="kpi-value" id="kpiEddBatch3">0</div>
+      <div class="kpi-subtext">Shed 3 - West</div>
+    </div>
+  </div>
+
+  <!-- OPERATIONS & INVENTORY SUMMARY CARDS -->
+  <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Operations & Inventory Summary</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Workers Status Today</span><div class="kpi-icon">👥</div></div>
+      <div class="kpi-value"><span id="kpiPresentToday">0</span> <span style="font-size: 1.1rem; color: var(--text-dim);">/ <span id="kpiActiveWorkers">0</span> Active</span></div>
+      <div class="kpi-subtext">Absent: <span id="kpiAbsentToday" style="color: var(--danger-500); font-weight:700;">0</span> | Leave: <span id="kpiLeaveToday">0</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Pending Wages</span><div class="kpi-icon">💳</div></div>
+      <div class="kpi-value" id="kpiPendingPayments" style="color: var(--amber-400);">₹0</div>
+      <div class="kpi-subtext">Pending worker wage settlements</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Current Feed Stock</span><div class="kpi-icon">🌾</div></div>
+      <div class="kpi-value" id="kpiFeedStock">0 kg</div>
+      <div class="kpi-subtext">Today's Usage: <strong id="kpiTodayFeedUsage" style="color: var(--primary-300);">0 kg</strong></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Raw Material Stock</span><div class="kpi-icon">📦</div></div>
+      <div class="kpi-value" id="kpiRawMaterialStock">0 kg</div>
+      <div class="kpi-subtext">Today's Purchases: <strong id="kpiTodayPurchases">0 kg</strong></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-header"><span class="kpi-title">Today's Eggs Collected</span><div class="kpi-icon">🥚</div></div>
+      <div class="kpi-value" id="kpiTodayEggs">0</div>
+      <div class="kpi-subtext">Week: <strong id="kpiWeekEggs">0</strong> | Month: <strong id="kpiMonthEggs">0</strong></div>
+    </div>
+    <div class="kpi-card admin-only">
+      <div class="kpi-card-header"><span class="kpi-title">Month Net Balance</span><div class="kpi-icon">💰</div></div>
+      <div class="kpi-value" id="kpiMonthNetBalance">₹0</div>
+      <div class="kpi-subtext">Expenses: <strong id="kpiMonthExpenses">₹0</strong></div>
+    </div>
+  </div>
+
+  <!-- Farm Visual Analytics Charts Grid -->
+  <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-muted);">Dynamic Analytics & Trends</h3>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">🐔 Birds by Flock Type</span></div>
+      <div class="chart-container"><canvas id="chartBirdsByType"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">🏷️ Birds by Shed Batch</span></div>
+      <div class="chart-container"><canvas id="chartBirdsByBatch"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">🥚 Egg Production & Sales (14 Days)</span></div>
+      <div class="chart-container"><canvas id="chartEggTrend"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">⚠️ Mortality Trend (14 Days)</span></div>
+      <div class="chart-container"><canvas id="chartMortalityTrend"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">🌾 Feed Production vs Consumption</span></div>
+      <div class="chart-container"><canvas id="chartFeedComparison"></canvas></div>
+    </div>
+    <div class="chart-card admin-only">
+      <div class="chart-header"><span class="chart-title">💸 Expenses by Category (This Month)</span></div>
+      <div class="chart-container"><canvas id="chartExpensesByCat"></canvas></div>
+    </div>
+    <div class="chart-card admin-only">
+      <div class="chart-header"><span class="chart-title">📊 Income vs Expenses (Last 6 Months)</span></div>
+      <div class="chart-container"><canvas id="chartIncomeVsExpense"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Recent Activities Feed -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">🕒 Recent Farm Activities & Audit Trail</h3>
+    </div>
+    <div id="recentActivitiesList" style="padding: 1rem 1.5rem;"></div>
+  </div>
+
+</section>

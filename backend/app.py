@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 
 # Add backend directory to sys.path
@@ -11,8 +11,9 @@ if BASE_DIR not in sys.path:
 from database.db import init_db
 from database.seed_data import seed
 from routes.auth import auth_bp
+from routes.admin import admin_bp
 from routes.dashboard import dashboard_bp
-from routes.workers import workers_bp
+from routes.workers import workers_bp, get_attendance, mark_single_attendance, mark_bulk_attendance, get_attendance_stats, get_payments, record_payment
 from routes.birds import birds_bp
 from routes.eggs import eggs_bp
 from routes.raw_materials import raw_materials_bp
@@ -26,17 +27,40 @@ FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 CORS(app)
 
-# Register API Blueprints
+# Register API Blueprints (All Admin Protected)
 app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(workers_bp)
 app.register_blueprint(birds_bp)
 app.register_blueprint(eggs_bp)
 app.register_blueprint(raw_materials_bp)
+app.register_blueprint(raw_materials_bp, url_prefix="/api/materials", name="materials") # Alias
 app.register_blueprint(feed_bp)
 app.register_blueprint(finance_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(sync_bp)
+
+# Top-level API aliases for Attendance & Payments
+@app.route("/api/attendance", methods=["GET", "POST"])
+def api_attendance_alias():
+    if request.method == "GET":
+        return get_attendance()
+    return mark_single_attendance()
+
+@app.route("/api/attendance/bulk", methods=["POST"])
+def api_attendance_bulk_alias():
+    return mark_bulk_attendance()
+
+@app.route("/api/attendance/stats", methods=["GET"])
+def api_attendance_stats_alias():
+    return get_attendance_stats()
+
+@app.route("/api/payments", methods=["GET", "POST"])
+def api_payments_alias():
+    if request.method == "GET":
+        return get_payments()
+    return record_payment()
 
 @app.route("/")
 def serve_index():
@@ -68,7 +92,7 @@ if __name__ == "__main__":
     seed()
     port = int(os.environ.get("PORT", 5000))
     print(f"============================================================")
-    print(f"  RVKS WEB - Poultry Farm Management System")
+    print(f"  RVKS WEB - Poultry Farm Management System (Admin Only)")
     print(f"  Server starting at: http://127.0.0.1:{port}")
     print(f"============================================================")
     app.run(host="0.0.0.0", port=port, debug=False)

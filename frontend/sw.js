@@ -1,13 +1,29 @@
 // RVKS WEB - Service Worker for Offline Static Asset Caching
-const CACHE_NAME = "rvks-farm-cache-v1";
+const CACHE_NAME = "rvks-farm-cache-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
+  "/css/style.css",
+  "/css/components.css",
+  "/css/pages.css",
+  "/css/responsive.css",
   "/css/index.css",
-  "/js/app.js",
+  "/js/main.js",
+  "/js/components.js",
+  "/js/auth.js",
+  "/js/dashboard.js",
+  "/js/utils.js",
   "/js/api.js",
-  "/js/offline_sync.js",
   "/js/charts.js",
+  "/js/offline_sync.js",
+  "/js/app.js",
+  "/components/navbar.html",
+  "/components/sidebar.html",
+  "/components/footer.html",
+  "/components/modals.html",
+  "/components/toast.html",
+  "/pages/dashboard.html",
+  "/pages/login.html",
   "/manifest.json"
 ];
 

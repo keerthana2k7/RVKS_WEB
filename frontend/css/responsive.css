@@ -1,0 +1,97 @@
+/* RVKS WEB - Responsive & Print Media Queries */
+
+/* Tablet Responsiveness */
+@media (max-width: 992px) {
+  .app-sidebar {
+    position: fixed;
+    left: -260px;
+    z-index: 150;
+    transition: left 0.3s ease;
+    height: calc(100vh - 65px);
+  }
+
+  .app-sidebar.open {
+    left: 0;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-content {
+    padding: 1.25rem;
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0.6rem 1rem;
+  }
+
+  .brand-info h1 {
+    font-size: 1.15rem;
+  }
+
+  .quick-buttons-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .btn-quick-action {
+    min-height: 48px;
+    font-size: 0.88rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-dialog {
+    max-width: 95vw;
+  }
+
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .login-card {
+    padding: 1.75rem 1.25rem;
+  }
+}
+
+/* Print Styling for Reports */
+@media print {
+  .app-header, 
+  .app-sidebar, 
+  .quick-actions-bar, 
+  .btn, 
+  .table-toolbar, 
+  .toast-container,
+  .modal-backdrop,
+  .app-footer {
+    display: none !important;
+  }
+
+  body, .app-container, .app-content {
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+  }
+
+  .table-card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+
+  table.data-table th, table.data-table td {
+    color: #000 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+}

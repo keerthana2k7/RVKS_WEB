@@ -2,27 +2,21 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>RVKS WEB — Poultry Farm Management System</title>
-  <meta name="description" content="RVKS WEB - Real-time Livestock Flock Monitoring, Feed Formulation & Production, Egg Sales, and Farm Accounting">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#064e3b">
-  
-  <!-- Modular CSS Separation -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — RVKS WEB Poultry Management</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/pages.css">
   <link rel="stylesheet" href="/css/responsive.css">
-
-  <!-- Chart.js for High Performance Canvas Visualizations -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-  <!-- ==================== LOGIN VIEW (FARM OWNER / ADMIN ONLY) ==================== -->
+  <!-- Login View -->
   <div id="loginView" class="login-view-wrapper">
     <div class="login-card">
-      <div class="login-brand-icon">🐔</div>
+      <div class="login-brand-icon">
+        🐔
+      </div>
       <h1 class="login-title">RVKS WEB</h1>
       <p class="login-subtitle">Poultry Farm Management System</p>
       <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--primary-300); text-align: center;">
@@ -51,31 +45,7 @@
     </div>
   </div>
 
-  <!-- ==================== MAIN APPLICATION SHELL ==================== -->
-  <div id="appView" style="display: none; flex-direction: column; min-height: 100vh;">
-    <!-- Top Header Navigation Mount -->
-    <div id="navbarMount"></div>
-
-    <!-- App Container -->
-    <div class="app-container">
-      <!-- Left Sidebar Navigation Mount -->
-      <div id="sidebarMount"></div>
-
-      <!-- Main Dynamic Content Workspace -->
-      <main class="app-content" id="appContent">
-        <!-- Modular view pages loaded dynamically from /pages/*.html -->
-      </main>
-    </div>
-
-    <!-- Reusable Footer Mount -->
-    <div id="footerMount"></div>
-  </div>
-
-  <!-- ==================== REUSABLE MODALS & TOASTS MOUNT ==================== -->
-  <div id="modalsMount"></div>
-  <div id="toastMount"></div>
-
-  <!-- Modular Master Application Script -->
+  <div id="toastContainer" class="toast-container"></div>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>

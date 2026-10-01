@@ -1,0 +1,31 @@
+<!-- Reusable Header / Top Navigation Component -->
+<header class="app-header">
+  <div class="brand-wrapper">
+    <button id="mobileMenuBtn" class="btn btn-secondary btn-sm" style="display: none; padding: 0.4rem 0.6rem;" aria-label="Toggle Navigation Menu">☰</button>
+    <div class="brand-logo-icon">🐔</div>
+    <div class="brand-info">
+      <h1>RVKS WEB</h1>
+      <span class="brand-subtitle">Poultry Farm Management System</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <!-- Offline / Online Sync Indicator -->
+    <div id="syncIndicator" class="sync-indicator online" title="Farm server synchronization status">
+      <span class="status-dot"></span>
+      <span>Online</span>
+    </div>
+
+    <!-- Dark / Light Theme Toggle -->
+    <button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="Toggle Dark/Light Mode">🌓</button>
+
+    <!-- Current User Badge -->
+    <div class="user-badge">
+      <span id="currentUserName" style="font-weight: 600;">Farm Owner</span>
+      <span id="currentUserRole" class="user-role-tag">Owner / Admin</span>
+    </div>
+
+    <!-- Logout Action -->
+    <button class="btn btn-secondary btn-sm" onclick="window.logout()">Logout</button>
+  </div>
+</header>
