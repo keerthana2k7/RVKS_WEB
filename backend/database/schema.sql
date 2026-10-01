@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS workers (
     job_role VARCHAR(100) NOT NULL,
     salary_type VARCHAR(20) NOT NULL DEFAULT 'Monthly', -- 'Daily', 'Weekly', 'Monthly'
     salary_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    payment_status VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Paid', 'Pending', 'Partial'
+    payment_due_day INTEGER DEFAULT 30, -- Day of month or week due
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Paid', 'Partially Paid', 'Pending', 'Overpaid'
     payment_date DATE,
     payment_method VARCHAR(50) DEFAULT 'Cash',
     status VARCHAR(20) NOT NULL DEFAULT 'Active', -- 'Active', 'Inactive' (Soft deletion)
@@ -47,14 +48,20 @@ CREATE TABLE IF NOT EXISTS worker_payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     payment_code VARCHAR(30) UNIQUE NOT NULL,
     worker_id INTEGER NOT NULL,
-    salary_period VARCHAR(50) NOT NULL, -- e.g. "Sep 2026" or "10-09-2026 to 17-09-2026"
+    salary_period VARCHAR(50) NOT NULL, -- e.g. "Oct 2026" or "2026-10"
     payment_date DATE NOT NULL,
+    payment_type VARCHAR(30) NOT NULL DEFAULT 'Salary', -- 'Salary', 'Advance', 'Extra', 'Bonus', 'Other'
     amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
+    extra_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    is_advance BOOLEAN NOT NULL DEFAULT 0,
+    is_extra BOOLEAN NOT NULL DEFAULT 0,
+    extra_reason VARCHAR(100), -- 'Advance', 'Bonus', 'Emergency payment', 'Travel allowance', 'Other'
     payment_method VARCHAR(50) NOT NULL DEFAULT 'Cash', -- 'Cash', 'UPI', 'Bank Transfer', 'Other'
     status VARCHAR(20) NOT NULL DEFAULT 'Paid', -- 'Paid', 'Pending', 'Partial'
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (worker_id) REFERENCES workers(id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS bird_types (

@@ -1,5 +1,5 @@
-// RVKS WEB - Service Worker for Offline Static Asset Caching
-const CACHE_NAME = "rvks-farm-cache-v3";
+// RVKS WEB - Service Worker for Offline Static Asset Caching (Network-First Strategy)
+const CACHE_NAME = "rvks-farm-cache-v6";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -23,6 +23,8 @@ const ASSETS_TO_CACHE = [
   "/components/modals.html",
   "/components/toast.html",
   "/pages/dashboard.html",
+  "/pages/payments.html",
+  "/pages/workers.html",
   "/pages/login.html",
   "/manifest.json"
 ];
@@ -30,7 +32,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("[ServiceWorker] Pre-caching static assets for offline capability...");
+      console.log("[ServiceWorker] Pre-caching static assets (v6)...");
       return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
         console.warn("[ServiceWorker] Failed to cache some assets:", err);
       });
@@ -56,21 +58,28 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // Let API requests go directly to network or handled by app logic
+  // Let API requests go directly to network
   if (e.request.url.includes("/api/")) {
     return;
   }
 
+  // Network-First strategy: Always fetch freshest assets from server when online; fallback to cache if offline
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request).catch(() => {
-        if (e.request.mode === "navigate") {
-          return caches.match("/index.html");
+    fetch(e.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && e.request.method === "GET") {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseToCache));
         }
-      });
-    })
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (e.request.mode === "navigate") {
+            return caches.match("/index.html");
+          }
+        });
+      })
   );
 });

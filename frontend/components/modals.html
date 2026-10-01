@@ -286,36 +286,94 @@
 
 <!-- 6. Record Payment Modal -->
 <div class="modal-backdrop" id="modalRecordPayment">
-  <div class="modal-dialog">
+  <div class="modal-dialog" style="max-width: 620px;">
     <div class="modal-header">
-      <h3 style="color: #f59e0b;"><span>💳</span> Record Worker Salary Payment</h3>
+      <h3 style="color: #f59e0b;"><span>💳</span> Make Worker Payment</h3>
       <button class="modal-close-btn" aria-label="Close modal">&times;</button>
     </div>
-    <form id="formRecordPayment">
+    <form id="formRecordPayment" onsubmit="window.submitRecordPayment(event)">
       <div class="modal-body">
+        <!-- Worker selector & Salary Period -->
         <div class="form-row">
-          <div class="form-group">
-            <label for="payWorkerSelect">Worker</label>
-            <select id="payWorkerSelect" class="form-control" required></select>
+          <div class="form-group" style="flex: 2;">
+            <label for="payWorkerSelect">Select Worker *</label>
+            <select id="payWorkerSelect" class="form-control" required onchange="window.onPayWorkerSelected()"></select>
           </div>
-          <div class="form-group">
-            <label for="payPeriod">Salary Period</label>
-            <input type="text" id="payPeriod" class="form-control" placeholder="e.g. Sep 2026" required>
+          <div class="form-group" style="flex: 1;">
+            <label for="payPeriod">Salary Period *</label>
+            <input type="text" id="payPeriod" class="form-control" placeholder="e.g. Oct 2026" required>
           </div>
         </div>
+
+        <!-- Worker Current Ledger Summary Banner -->
+        <div id="payWorkerInfoBanner" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Salary Due</div>
+            <div id="payModalSalaryDue" style="font-weight: 700; font-size: 1.1rem; color: #60a5fa;">₹0</div>
+          </div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Already Paid</div>
+            <div id="payModalAlreadyPaid" style="font-weight: 700; font-size: 1.1rem; color: var(--primary-400);">₹0</div>
+          </div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Remaining Due</div>
+            <div id="payModalRemainingDue" style="font-weight: 700; font-size: 1.1rem; color: var(--amber-400);">₹0</div>
+          </div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Due Date</div>
+            <div id="payModalDueDate" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">-</div>
+          </div>
+        </div>
+
+        <!-- Payment Date & Payment Type -->
         <div class="form-row">
           <div class="form-group">
-            <label for="payDate">Payment Date</label>
+            <label for="payDate">Payment Date *</label>
             <input type="date" id="payDate" class="form-control" required>
           </div>
           <div class="form-group">
-            <label for="payAmount">Amount (₹)</label>
-            <input type="number" id="payAmount" class="form-control" step="10" placeholder="e.g. 15000" required>
+            <label for="payTypeSelect">Payment Type *</label>
+            <select id="payTypeSelect" class="form-control" onchange="window.updatePayFormPreview()">
+              <option value="Salary" selected>Regular Salary</option>
+              <option value="Advance">Advance Payment (Before Due Date)</option>
+              <option value="Extra">Extra Payment</option>
+              <option value="Bonus">Bonus</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
+
+        <!-- Amount Paid & Extra Amount -->
         <div class="form-row">
           <div class="form-group">
-            <label for="payMethodSelect">Payment Method</label>
+            <label for="payAmount">Base Amount Paid (₹) *</label>
+            <input type="number" id="payAmount" class="form-control" step="any" min="0" placeholder="e.g. 10000" required oninput="window.updatePayFormPreview()">
+            <small style="color: var(--text-dim); font-size: 0.75rem;">Regular salary or advance portion</small>
+          </div>
+          <div class="form-group">
+            <label for="payExtraAmount">Extra Amount (₹)</label>
+            <input type="number" id="payExtraAmount" class="form-control" step="any" min="0" value="0" placeholder="e.g. 2000" oninput="window.updatePayFormPreview()">
+            <small style="color: var(--text-dim); font-size: 0.75rem;">Separate from regular salary</small>
+          </div>
+        </div>
+
+        <!-- Extra Reason & Payment Method -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payExtraReason">Extra Amount Reason</label>
+            <select id="payExtraReason" class="form-control">
+              <option value="">None / Not Applicable</option>
+              <option value="Advance">Advance</option>
+              <option value="Bonus">Bonus</option>
+              <option value="Emergency payment">Emergency payment</option>
+              <option value="Travel allowance">Travel allowance</option>
+              <option value="Festival gift">Festival gift</option>
+              <option value="Overtime">Overtime / Extra Duty</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="payMethodSelect">Payment Method *</label>
             <select id="payMethodSelect" class="form-control">
               <option value="Cash" selected>Cash</option>
               <option value="UPI">UPI / GPay / PhonePe</option>
@@ -323,25 +381,88 @@
               <option value="Other">Other</option>
             </select>
           </div>
-          <div class="form-group">
-            <label for="payStatusSelect">Payment Status</label>
-            <select id="payStatusSelect" class="form-control">
-              <option value="Paid" selected>Paid</option>
-              <option value="Pending">Pending</option>
-              <option value="Partial">Partial</option>
-            </select>
+        </div>
+
+        <!-- Live Payout Calculation Preview Box -->
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed var(--primary-500); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 0.88rem; color: var(--text-muted);">
+            Total Cash Outflow: <span id="payModalTotalPreview" style="font-weight: 800; font-size: 1.15rem; color: var(--primary-400);">₹0</span>
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-dim);" id="payModalStatusPreview">
+            Status will update automatically
           </div>
         </div>
+
         <div class="form-group">
-          <label for="payNotes">Notes</label>
-          <input type="text" id="payNotes" class="form-control" placeholder="Optional settlement note">
+          <label for="payNotes">Notes / Explanation</label>
+          <input type="text" id="payNotes" class="form-control" placeholder="e.g. October monthly salary + Diwali bonus settlement">
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Wage Payment</button>
+        <button type="submit" class="btn btn-primary" id="btnSavePayment">💳 Make Payment</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- 6B. Worker Payment History Modal (Section 7) -->
+<div class="modal-backdrop" id="modalWorkerPaymentHistory">
+  <div class="modal-dialog" style="max-width: 820px;">
+    <div class="modal-header">
+      <div>
+        <h3 style="color: #60a5fa; margin: 0;"><span>📜</span> Worker Payment History</h3>
+        <p id="historyWorkerSub" style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-dim);"></p>
+      </div>
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Lifetime Stats -->
+      <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 1.25rem; gap: 0.75rem;">
+        <div class="kpi-card" style="padding: 0.85rem;">
+          <div class="kpi-title" style="font-size: 0.75rem;">Base Paid</div>
+          <div class="kpi-value" id="historyBasePaid" style="font-size: 1.25rem; color: var(--primary-400);">₹0</div>
+        </div>
+        <div class="kpi-card" style="padding: 0.85rem;">
+          <div class="kpi-title" style="font-size: 0.75rem;">Advance Paid</div>
+          <div class="kpi-value" id="historyAdvancePaid" style="font-size: 1.25rem; color: #a855f7;">₹0</div>
+        </div>
+        <div class="kpi-card" style="padding: 0.85rem;">
+          <div class="kpi-title" style="font-size: 0.75rem;">Extra Paid</div>
+          <div class="kpi-value" id="historyExtraPaid" style="font-size: 1.25rem; color: #06b6d4;">₹0</div>
+        </div>
+        <div class="kpi-card" style="padding: 0.85rem;">
+          <div class="kpi-title" style="font-size: 0.75rem;">Total Received</div>
+          <div class="kpi-value" id="historyTotalReceived" style="font-size: 1.25rem; color: #10b981;">₹0</div>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+        <table class="data-table" id="tableWorkerHistoryModal">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Voucher</th>
+              <th>Period</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Extra</th>
+              <th>Total</th>
+              <th>Method</th>
+              <th>Notes / Reason</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+      <button type="button" class="btn btn-primary" id="btnHistoryMakePayment" onclick="closeModal('modalWorkerPaymentHistory'); window.openMakePayment(window.activeHistoryWorkerId);">💳 Make Payment for Worker</button>
+    </div>
   </div>
 </div>
 

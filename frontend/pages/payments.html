@@ -1,44 +1,177 @@
-<!-- VIEW 4: WORKER PAYROLL PAYMENTS -->
+<!-- VIEW 4: DIRECT WORKER PAYROLL & PAYMENT MANAGEMENT (ADMIN / OWNER ONLY) -->
 <section id="view-payments" class="view-section">
+  <!-- Page Header -->
   <div class="page-header">
     <div class="page-title-area">
-      <h2><span>💳</span> Worker Payroll Payments</h2>
-      <p>Record and monitor wages, salary history, and pending settlements.</p>
+      <h2><span>💳</span> Worker Payroll & Payments</h2>
+      <p>Direct payment management for the Farm Owner. Manage worker salaries, advances, extra bonuses, and pending dues with automated balance calculations.</p>
     </div>
-    <button class="btn btn-primary" data-open-modal="modalRecordPayment">+ Record Payment</button>
-  </div>
-
-  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
-    <div class="kpi-card">
-      <div class="kpi-title">Total Wages Paid</div>
-      <div class="kpi-value" id="paymentsTotalPaid" style="color: var(--primary-400);">₹0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Total Pending Payments</div>
-      <div class="kpi-value" id="paymentsTotalPending" style="color: var(--amber-400);">₹0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Last Payment Settled</div>
-      <div class="kpi-value" id="paymentsLastDate" style="font-size: 1.4rem;">-</div>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button class="btn btn-secondary" onclick="window.loadPayments()" title="Reload payroll data">🔄 Refresh</button>
+      <button class="btn btn-primary" onclick="window.openMakePayment(null)">+ Make Payment</button>
     </div>
   </div>
 
+  <!-- 1. Top Summary KPI Cards (Section 8) -->
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem; gap: 1rem;">
+    <!-- Total Workers -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Workers</span>
+        <span class="kpi-icon" style="color: var(--primary-400);">👥</span>
+      </div>
+      <div class="kpi-value" id="payrollSummaryWorkers" style="font-size: 1.7rem;">0</div>
+      <div class="kpi-subtext">Active on payroll</div>
+    </div>
+
+    <!-- Total Salary Due -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Salary Due</span>
+        <span class="kpi-icon" style="color: #60a5fa;">📋</span>
+      </div>
+      <div class="kpi-value" id="payrollSummarySalaryDue" style="font-size: 1.7rem; color: #60a5fa;">₹0</div>
+      <div class="kpi-subtext" id="payrollSummaryPeriod">Current Cycle</div>
+    </div>
+
+    <!-- Total Paid -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Paid</span>
+        <span class="kpi-icon" style="color: var(--primary-400);">💰</span>
+      </div>
+      <div class="kpi-value" id="payrollSummaryPaid" style="font-size: 1.7rem; color: var(--primary-400);">₹0</div>
+      <div class="kpi-subtext">All salaries + extras</div>
+    </div>
+
+    <!-- Total Pending -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Pending</span>
+        <span class="kpi-icon" style="color: var(--amber-400);">⏳</span>
+      </div>
+      <div class="kpi-value" id="payrollSummaryPending" style="font-size: 1.7rem; color: var(--amber-400);">₹0</div>
+      <div class="kpi-subtext highlight" id="payrollSummaryPendingSub">Remaining balance</div>
+    </div>
+
+    <!-- Total Advance Paid -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Advance Paid</span>
+        <span class="kpi-icon" style="color: #a855f7;">⚡</span>
+      </div>
+      <div class="kpi-value" id="payrollSummaryAdvance" style="font-size: 1.7rem; color: #a855f7;">₹0</div>
+      <div class="kpi-subtext">Paid before due date</div>
+    </div>
+
+    <!-- Total Extra Paid -->
+    <div class="kpi-card" style="padding: 1.1rem;">
+      <div class="kpi-card-header">
+        <span class="kpi-title">Total Extra Paid</span>
+        <span class="kpi-icon" style="color: #06b6d4;">🎁</span>
+      </div>
+      <div class="kpi-value" id="payrollSummaryExtra" style="font-size: 1.7rem; color: #06b6d4;">₹0</div>
+      <div class="kpi-subtext">Bonuses & allowances</div>
+    </div>
+  </div>
+
+  <!-- 2. Filters & Search Toolbar (Section 9) -->
+  <div class="table-card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <!-- Search Input -->
+      <div style="flex: 1; min-width: 250px;">
+        <input type="text" id="payrollSearchInput" class="form-control" placeholder="🔍 Search worker name, ID, or job role..." oninput="window.filterPayroll()">
+      </div>
+
+      <!-- Month Filter -->
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="payrollMonthFilter" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0; white-space: nowrap;">Month Cycle:</label>
+        <input type="month" id="payrollMonthFilter" class="form-control" style="width: auto; min-width: 155px;" onchange="window.filterPayroll()">
+      </div>
+
+      <!-- Status Filter Dropdown -->
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="payrollStatusFilter" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0; white-space: nowrap;">Payment Status:</label>
+        <select id="payrollStatusFilter" class="form-control" style="width: auto; min-width: 160px;" onchange="window.filterPayroll()">
+          <option value="All">All Workers</option>
+          <option value="Pending">Pending Only</option>
+          <option value="Partially Paid">Partially Paid</option>
+          <option value="Paid">Fully Paid</option>
+          <option value="Overpaid">Overpaid</option>
+          <option value="Payment Due">⚠️ Payment Due</option>
+          <option value="Advance Paid">⚡ Advance Paid</option>
+        </select>
+      </div>
+
+      <!-- Reset Filter Button -->
+      <button class="btn btn-secondary" onclick="window.resetPayrollFilters()" style="padding: 0.45rem 0.85rem; font-size: 0.85rem;">Reset</button>
+    </div>
+  </div>
+
+  <!-- 3. Direct Payroll Table (Section 1, 2, 6, 10) -->
   <div class="table-card">
+    <div class="table-toolbar" style="padding: 0.85rem 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">Worker Payroll Ledger</h3>
+        <span class="badge info" id="payrollWorkerCountBadge">0 workers</span>
+      </div>
+      <div style="font-size: 0.82rem; color: var(--text-dim);">
+        Calculated formula: <span style="font-family: monospace; color: var(--text-muted);">Remaining = Salary Due - Regular Paid - Advance Paid</span>
+      </div>
+    </div>
+    
     <div class="table-responsive">
-      <table class="data-table" id="tablePayments">
+      <table class="data-table" id="tablePayroll">
+        <thead>
+          <tr>
+            <th>Worker</th>
+            <th>Monthly Salary</th>
+            <th>Due Date</th>
+            <th>Already Paid</th>
+            <th>Advance Paid</th>
+            <th>Extra Amount</th>
+            <th>Total Received</th>
+            <th>Remaining to Pay</th>
+            <th>Payment Status</th>
+            <th>Last Payment</th>
+            <th style="min-width: 180px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="payrollTableBody">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Collapsible Global Payment Transactions History Table -->
+  <div class="table-card" style="margin-top: 1.5rem;">
+    <div class="table-toolbar" style="cursor: pointer; user-select: none;" onclick="window.toggleAllPaymentsList()">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span id="allPaymentsChevron">▼</span>
+        <h3 style="margin: 0; font-size: 1rem; font-weight: 700;">Recent Payment Transactions History (All Workers)</h3>
+        <span class="badge" id="allPaymentsCountBadge" style="background: var(--bg-surface-elevated); color: var(--text-dim);">0 records</span>
+      </div>
+      <span style="font-size: 0.82rem; color: var(--text-dim);">Click to show/hide transaction logs</span>
+    </div>
+    <div id="allPaymentsContainer" class="table-responsive" style="display: block;">
+      <table class="data-table" id="tableAllPayments">
         <thead>
           <tr>
             <th>Payment ID</th>
+            <th>Date</th>
             <th>Worker</th>
-            <th>Salary Period</th>
-            <th>Payment Date</th>
-            <th>Amount</th>
+            <th>Type</th>
+            <th>Base Amount</th>
+            <th>Extra Amount</th>
+            <th>Total Paid</th>
             <th>Method</th>
-            <th>Status</th>
             <th>Notes</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="allPaymentsBody">
+          <!-- Populated dynamically via JS -->
+        </tbody>
       </table>
     </div>
   </div>

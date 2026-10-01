@@ -184,5 +184,99 @@ class TestFarmAPI(unittest.TestCase):
         self.assertEqual(res_csv.mimetype, "text/csv")
         self.assertIn(b"RVKS WEB", res_csv.data)
 
+    def test_worker_payroll_calculations_and_advance_extra_tracking(self):
+        """Test Worker Payroll automated balance calculations, advance tracking, extra bonus tracking, and status."""
+        # 1. Fetch current payroll overview
+        res = self.client.get("/api/workers/payroll?month=2026-10", headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("payroll", data)
+        self.assertIn("summary", data)
+        
+        summary = data["summary"]
+        self.assertIn("total_workers", summary)
+        self.assertIn("total_salary_due", summary)
+        self.assertIn("total_paid", summary)
+        self.assertIn("total_pending", summary)
+        self.assertIn("total_advance_paid", summary)
+        self.assertIn("total_extra_paid", summary)
+        
+        # 2. Add a new worker specifically to test lifecycle: Salary = 15,000
+        new_worker_res = self.client.post("/api/workers", json={
+            "name": "Ramesh Testing",
+            "job_role": "Poultry Attendant",
+            "phone": "9998887776",
+            "salary_type": "Monthly",
+            "salary_amount": 15000.0,
+            "payment_status": "Pending",
+            "payment_method": "Cash"
+        }, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(new_worker_res.status_code, 201)
+        w_id = new_worker_res.get_json()["worker_id"]
+        
+        # Initial check: Remaining = 15,000, Status = Pending
+        res_chk1 = self.client.get("/api/workers/payroll?month=2026-10", headers={"Authorization": f"Bearer {self.admin_token}"})
+        w_record = next(w for w in res_chk1.get_json()["payroll"] if w["worker_id"] == w_id)
+        self.assertEqual(w_record["regular_salary_due"], 15000.0)
+        self.assertEqual(w_record["amount_already_paid"], 0.0)
+        self.assertEqual(w_record["advance_paid"], 0.0)
+        self.assertEqual(w_record["extra_amount_paid"], 0.0)
+        self.assertEqual(w_record["remaining_amount"], 15000.0)
+        self.assertEqual(w_record["payment_status"], "Pending")
+        
+        # 3. Pay ₹5,000 Advance on 15 October (before due date 30 October)
+        adv_res = self.client.post("/api/workers/payments", json={
+            "worker_id": w_id,
+            "payment_date": "2026-10-15",
+            "salary_period": "Oct 2026",
+            "payment_type": "Advance",
+            "amount": 5000.0,
+            "payment_method": "UPI",
+            "notes": "Pre-due date advance"
+        }, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(adv_res.status_code, 201)
+        
+        # Check: Advance = 5,000, Remaining = 10,000, Status = Partially Paid
+        res_chk2 = self.client.get("/api/workers/payroll?month=2026-10", headers={"Authorization": f"Bearer {self.admin_token}"})
+        w_record = next(w for w in res_chk2.get_json()["payroll"] if w["worker_id"] == w_id)
+        self.assertEqual(w_record["advance_paid"], 5000.0)
+        self.assertEqual(w_record["remaining_amount"], 10000.0)
+        self.assertEqual(w_record["payment_status"], "Partially Paid")
+        
+        # 4. Pay regular ₹10,000 + Extra ₹2,000 (Diwali Bonus)
+        extra_res = self.client.post("/api/workers/payments", json={
+            "worker_id": w_id,
+            "payment_date": "2026-10-30",
+            "salary_period": "Oct 2026",
+            "payment_type": "Salary",
+            "amount": 10000.0,
+            "extra_amount": 2000.0,
+            "extra_reason": "Bonus",
+            "payment_method": "Bank Transfer",
+            "notes": "Salary settlement + festival bonus"
+        }, headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(extra_res.status_code, 201)
+        
+        # Check: Regular Paid = 10,000, Advance = 5,000, Extra = 2,000, Total Received = 17,000, Remaining = 0, Status = Paid
+        res_chk3 = self.client.get("/api/workers/payroll?month=2026-10", headers={"Authorization": f"Bearer {self.admin_token}"})
+        w_record = next(w for w in res_chk3.get_json()["payroll"] if w["worker_id"] == w_id)
+        self.assertEqual(w_record["amount_already_paid"], 10000.0)
+        self.assertEqual(w_record["advance_paid"], 5000.0)
+        self.assertEqual(w_record["extra_amount_paid"], 2000.0)
+        self.assertEqual(w_record["total_amount_paid"], 17000.0)
+        self.assertEqual(w_record["remaining_amount"], 0.0)
+        self.assertEqual(w_record["payment_status"], "Paid")
+        
+        # 5. Check Worker Payment History Ledger
+        res_hist = self.client.get(f"/api/workers/{w_id}/payments", headers={"Authorization": f"Bearer {self.admin_token}"})
+        self.assertEqual(res_hist.status_code, 200)
+        hist_data = res_hist.get_json()
+        self.assertEqual(len(hist_data["payments"]), 2)
+        self.assertEqual(hist_data["stats"]["total_base_paid"], 15000.0)
+        self.assertEqual(hist_data["stats"]["total_advance_paid"], 5000.0)
+        self.assertEqual(hist_data["stats"]["total_extra_paid"], 2000.0)
+        self.assertEqual(hist_data["stats"]["total_received"], 17000.0)
+
 if __name__ == "__main__":
     unittest.main()
+

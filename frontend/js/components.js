@@ -426,26 +426,24 @@ export function initForms(refreshCallback) {
   const formPayment = document.getElementById("formRecordPayment");
   if (formPayment && !formPayment.dataset.bound) {
     formPayment.dataset.bound = "true";
+
+    // Dynamic field listeners
+    const selWorker = document.getElementById("payWorkerSelect");
+    if (selWorker) selWorker.addEventListener("change", () => window.onPayWorkerSelected && window.onPayWorkerSelected());
+
+    const inpAmt = document.getElementById("payAmount");
+    if (inpAmt) inpAmt.addEventListener("input", () => window.updatePayFormPreview && window.updatePayFormPreview());
+
+    const inpExt = document.getElementById("payExtraAmount");
+    if (inpExt) inpExt.addEventListener("input", () => window.updatePayFormPreview && window.updatePayFormPreview());
+
+    const selType = document.getElementById("payTypeSelect");
+    if (selType) selType.addEventListener("change", () => window.updatePayFormPreview && window.updatePayFormPreview());
+
     formPayment.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const payload = {
-        worker_id: parseInt(document.getElementById("payWorkerSelect").value),
-        salary_period: document.getElementById("payPeriod").value,
-        payment_date: document.getElementById("payDate").value,
-        amount: parseFloat(document.getElementById("payAmount").value),
-        payment_method: document.getElementById("payMethodSelect").value,
-        status: document.getElementById("payStatusSelect").value,
-        notes: document.getElementById("payNotes").value
-      };
-
-      try {
-        const res = await Api.post("/api/workers/payments", payload);
-        showToast(res.message);
-        closeModal("modalRecordPayment");
-        formPayment.reset();
-        await onSubmitted();
-      } catch (err) {
-        showToast(err.message, "error");
+      if (window.submitRecordPayment) {
+        await window.submitRecordPayment(e);
       }
     });
   }

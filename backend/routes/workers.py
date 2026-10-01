@@ -332,7 +332,188 @@ def get_attendance_stats():
             
     return jsonify({"month": month, "stats": stats})
 
-# ----------------- PAYMENTS (ADMIN ONLY) ----------------- #
+# ----------------- PAYROLL & PAYMENTS (ADMIN ONLY) ----------------- #
+
+@workers_bp.route("/payroll", methods=["GET"])
+@admin_required
+def get_payroll_overview():
+    """
+    Direct Payroll Management Endpoint.
+    Returns per-worker real-time payment calculations:
+    Salary, Advance, Regular Paid, Extra Paid, Total Received, Remaining, Status, Due Date.
+    """
+    import calendar
+    month_param = request.args.get("month") # e.g. "2026-10" or "Oct 2026"
+    status_filter = request.args.get("status") # "All", "Paid", "Pending", "Partially Paid", "Overpaid", "Payment Due", "Advance Paid"
+    search = request.args.get("search", "").strip().lower()
+    
+    today = datetime.now()
+    if not month_param:
+        target_year = today.year
+        target_month = today.month
+        salary_period = today.strftime("%b %Y")
+        month_iso = today.strftime("%Y-%m")
+    else:
+        try:
+            if "-" in month_param:
+                dt = datetime.strptime(month_param, "%Y-%m")
+            else:
+                dt = datetime.strptime(month_param, "%b %Y")
+            target_year = dt.year
+            target_month = dt.month
+            salary_period = dt.strftime("%b %Y")
+            month_iso = dt.strftime("%Y-%m")
+        except Exception:
+            target_year = today.year
+            target_month = today.month
+            salary_period = today.strftime("%b %Y")
+            month_iso = today.strftime("%Y-%m")
+            
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM workers WHERE status = 'Active' ORDER BY name ASC")
+        workers = cursor.fetchall()
+        
+        payroll_list = []
+        total_salary_due_sum = 0.0
+        total_paid_sum = 0.0
+        total_pending_sum = 0.0
+        total_advance_paid_sum = 0.0
+        total_extra_paid_sum = 0.0
+        
+        for w in workers:
+            w_id = w["id"]
+            salary_type = w.get("salary_type", "Monthly")
+            base_salary = float(w.get("salary_amount", 0.0))
+            
+            if salary_type == "Monthly":
+                salary_due = base_salary
+            elif salary_type == "Weekly":
+                salary_due = round(base_salary * 4, 2)
+            else: # Daily
+                salary_due = round(base_salary * 30, 2)
+                
+            due_day = w.get("payment_due_day") or 30
+            actual_due_day = min(due_day, calendar.monthrange(target_year, target_month)[1])
+            worker_due_date = f"{target_year:04d}-{target_month:02d}-{actual_due_day:02d}"
+            
+            cursor.execute("""
+                SELECT * FROM worker_payments 
+                WHERE worker_id = ? AND (salary_period = ? OR strftime('%Y-%m', payment_date) = ?)
+                ORDER BY payment_date ASC, id ASC
+            """, (w_id, salary_period, month_iso))
+            payments = cursor.fetchall()
+            
+            regular_paid = 0.0
+            advance_paid = 0.0
+            extra_paid = 0.0
+            
+            for p in payments:
+                amt = float(p.get("amount") or 0.0)
+                ext = float(p.get("extra_amount") or 0.0)
+                p_type = p.get("payment_type") or "Salary"
+                is_adv = bool(p.get("is_advance"))
+                is_ext = bool(p.get("is_extra"))
+                
+                # The explicit extra amount column always counts towards extra_paid
+                extra_paid += ext
+                
+                if p_type == "Advance" or is_adv:
+                    advance_paid += amt
+                elif p_type in ("Extra", "Bonus"):
+                    extra_paid += amt
+                else:
+                    regular_paid += amt
+                    
+            regular_paid = round(regular_paid, 2)
+            advance_paid = round(advance_paid, 2)
+            extra_paid = round(extra_paid, 2)
+            
+            total_paid = round(regular_paid + advance_paid + extra_paid, 2)
+            effective_salary_paid = round(regular_paid + advance_paid, 2)
+            remaining_amount = round(max(0.0, salary_due - effective_salary_paid), 2)
+            
+            if effective_salary_paid == 0:
+                payment_status = "Pending"
+            elif effective_salary_paid < salary_due:
+                payment_status = "Partially Paid"
+            elif effective_salary_paid == salary_due:
+                payment_status = "Paid"
+            else:
+                payment_status = "Overpaid"
+                
+            cursor.execute("""
+                SELECT payment_date, amount, payment_type 
+                FROM worker_payments 
+                WHERE worker_id = ? 
+                ORDER BY payment_date DESC, id DESC LIMIT 1
+            """, (w_id,))
+            last_p = cursor.fetchone()
+            last_payment_date = last_p["payment_date"] if last_p else (w.get("payment_date") or "-")
+            
+            today_str = today.strftime("%Y-%m-%d")
+            is_payment_due = (today_str >= worker_due_date) and (payment_status != "Paid")
+            
+            item = {
+                "worker_id": w_id,
+                "worker_code": w["worker_code"],
+                "name": w["name"],
+                "job_role": w["job_role"],
+                "phone": w.get("phone") or "",
+                "salary_type": salary_type,
+                "salary_amount": base_salary,
+                "regular_salary_due": salary_due,
+                "payment_due_date": worker_due_date,
+                "next_due_date": worker_due_date,
+                "amount_already_paid": regular_paid,
+                "advance_paid": advance_paid,
+                "extra_amount_paid": extra_paid,
+                "total_amount_paid": total_paid,
+                "remaining_amount": remaining_amount,
+                "payment_status": payment_status,
+                "last_payment_date": last_payment_date,
+                "is_payment_due": is_payment_due,
+                "notes": w.get("notes") or ""
+            }
+            
+            if search:
+                w_text = f"{w['name']} {w['worker_code']} {w['job_role']} {w.get('phone', '')}".lower()
+                if search not in w_text:
+                    continue
+                    
+            if status_filter and status_filter != "All":
+                if status_filter == "Payment Due" and not is_payment_due:
+                    continue
+                elif status_filter == "Advance Paid" and advance_paid <= 0:
+                    continue
+                elif status_filter in ("Paid", "Pending", "Partially Paid", "Overpaid") and payment_status != status_filter:
+                    continue
+                    
+            payroll_list.append(item)
+            
+            total_salary_due_sum += salary_due
+            total_paid_sum += total_paid
+            total_pending_sum += remaining_amount
+            total_advance_paid_sum += advance_paid
+            total_extra_paid_sum += extra_paid
+            
+        summary = {
+            "total_workers": len(workers),
+            "filtered_workers": len(payroll_list),
+            "total_salary_due": round(total_salary_due_sum, 2),
+            "total_paid": round(total_paid_sum, 2),
+            "total_pending": round(total_pending_sum, 2),
+            "total_advance_paid": round(total_advance_paid_sum, 2),
+            "total_extra_paid": round(total_extra_paid_sum, 2),
+            "salary_period": salary_period,
+            "month_iso": month_iso
+        }
+        
+    return jsonify({
+        "payroll": payroll_list,
+        "summary": summary
+    })
 
 @workers_bp.route("/payments", methods=["GET"])
 @admin_required
@@ -361,8 +542,7 @@ def get_payments():
         cursor.execute(query, params)
         payments = cursor.fetchall()
         
-        # Summary statistics
-        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total_paid FROM worker_payments WHERE status = 'Paid'")
+        cursor.execute("SELECT COALESCE(SUM(amount + COALESCE(extra_amount, 0)), 0) as total_paid FROM worker_payments WHERE status = 'Paid'")
         total_paid = cursor.fetchone()["total_paid"]
         
         cursor.execute("SELECT COALESCE(SUM(amount), 0) as total_pending FROM worker_payments WHERE status = 'Pending'")
@@ -380,49 +560,145 @@ def get_payments():
         }
     })
 
+@workers_bp.route("/<int:worker_id>/payments", methods=["GET"])
+@admin_required
+def get_worker_payment_history(worker_id):
+    """Returns full historical payment transactions for a specific worker."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM workers WHERE id = ?", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker not found"}), 404
+            
+        cursor.execute("""
+            SELECT * FROM worker_payments 
+            WHERE worker_id = ? 
+            ORDER BY payment_date DESC, id DESC
+        """, (worker_id,))
+        payments = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(amount), 0) as total_base_paid,
+                COALESCE(SUM(extra_amount), 0) as total_extra_paid,
+                COALESCE(SUM(CASE WHEN is_advance = 1 OR payment_type = 'Advance' THEN amount END), 0) as total_advance_paid,
+                COALESCE(SUM(amount + COALESCE(extra_amount, 0)), 0) as total_received
+            FROM worker_payments
+            WHERE worker_id = ?
+        """, (worker_id,))
+        stats = cursor.fetchone()
+        
+    return jsonify({
+        "worker": worker,
+        "payments": payments,
+        "stats": stats
+    })
+
 @workers_bp.route("/payments", methods=["POST"])
 @admin_required
 def record_payment():
     data = request.get_json() or {}
     worker_id = data.get("worker_id")
-    salary_period = data.get("salary_period", "").strip()
     payment_date = data.get("payment_date", datetime.now().strftime("%Y-%m-%d"))
     amount = float(data.get("amount", 0.0))
+    extra_amount = float(data.get("extra_amount", 0.0))
+    payment_type = data.get("payment_type", "Salary")
+    extra_reason = data.get("extra_reason", "").strip() or None
     payment_method = data.get("payment_method", "Cash")
-    status = data.get("status", "Paid")
+    salary_period = data.get("salary_period", "").strip()
     notes = data.get("notes", "").strip()
     
-    if not worker_id or not salary_period or amount <= 0:
-        return jsonify({"error": "Worker, salary period, and valid positive amount are required"}), 400
+    # Auto-fill salary_period if missing
+    if not salary_period:
+        try:
+            p_dt = datetime.strptime(payment_date, "%Y-%m-%d")
+            salary_period = p_dt.strftime("%b %Y")
+        except Exception:
+            salary_period = datetime.now().strftime("%b %Y")
+            
+    total_transaction_amount = amount + extra_amount
+    if not worker_id or total_transaction_amount <= 0:
+        return jsonify({"error": "Worker and a valid positive amount are required"}), 400
         
+    is_advance = 1 if (payment_type == "Advance" or data.get("is_advance")) else 0
+    is_extra = 1 if (extra_amount > 0 or payment_type in ("Extra", "Bonus") or data.get("is_extra")) else 0
+    
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) as count FROM worker_payments")
-        next_num = cursor.fetchone()["count"] + 1
-        payment_code = f"PMT-{next_num:03d}"
+        
+        cursor.execute("SELECT * FROM workers WHERE id = ?", (worker_id,))
+        worker = cursor.fetchone()
+        if not worker:
+            return jsonify({"error": "Worker record not found"}), 404
+            
+        cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM worker_payments")
+        next_id = cursor.fetchone()["next_id"]
+        payment_code = f"PMT-{next_id:04d}"
+        cursor.execute("SELECT id FROM worker_payments WHERE payment_code = ?", (payment_code,))
+        if cursor.fetchone():
+            payment_code = f"PMT-{next_id:04d}-{int(datetime.now().timestamp())}"
         
         cursor.execute("""
-            INSERT INTO worker_payments (payment_code, worker_id, salary_period, payment_date, amount, payment_method, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (payment_code, worker_id, salary_period, payment_date, amount, payment_method, status, notes))
+            INSERT INTO worker_payments 
+            (payment_code, worker_id, salary_period, payment_date, payment_type, amount, extra_amount, is_advance, is_extra, extra_reason, payment_method, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?)
+        """, (payment_code, worker_id, salary_period, payment_date, payment_type, amount, extra_amount, is_advance, is_extra, extra_reason, payment_method, notes))
         
-        # Update worker's latest payment status and payment date
+        # Recompute worker's current cycle payment status
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN (payment_type = 'Salary' OR payment_type IS NULL) AND is_advance = 0 THEN amount END), 0) as reg_paid,
+                COALESCE(SUM(CASE WHEN is_advance = 1 OR payment_type = 'Advance' THEN amount END), 0) as adv_paid
+            FROM worker_payments 
+            WHERE worker_id = ? AND salary_period = ?
+        """, (worker_id, salary_period))
+        p_row = cursor.fetchone()
+        eff_paid = p_row["reg_paid"] + p_row["adv_paid"]
+        
+        salary_due = float(worker.get("salary_amount", 0.0))
+        if worker.get("salary_type") == "Weekly":
+            salary_due *= 4
+        elif worker.get("salary_type") == "Daily":
+            salary_due *= 30
+            
+        if eff_paid == 0:
+            new_status = "Pending"
+        elif eff_paid < salary_due:
+            new_status = "Partially Paid"
+        elif eff_paid == salary_due:
+            new_status = "Paid"
+        else:
+            new_status = "Overpaid"
+            
         cursor.execute("""
             UPDATE workers 
             SET payment_status = ?, payment_date = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (status, payment_date, worker_id))
+        """, (new_status, payment_date, worker_id))
         
-        # If marked as paid, record automatically in expenses table
-        if status == "Paid":
-            cursor.execute("SELECT name FROM workers WHERE id = ?", (worker_id,))
-            w_row = cursor.fetchone()
-            w_name = w_row["name"] if w_row else f"Worker #{worker_id}"
-            cursor.execute("""
-                INSERT INTO expenses (expense_code, date, category, description, amount, payment_method, paid_by, reference_id, notes)
-                VALUES (?, ?, 'Worker Salary', ?, ?, ?, 'Owner', ?, ?)
-            """, (f"EXP-{payment_code}", payment_date, f"Salary to {w_name} ({salary_period})", amount, payment_method, payment_code, notes))
+        # Record in expenses table for accounting
+        w_name = worker["name"]
+        desc_parts = [f"Salary payment to {w_name} ({salary_period}) - ₹{amount}"]
+        if extra_amount > 0:
+            desc_parts.append(f"Extra ({extra_reason or 'Bonus'}): ₹{extra_amount}")
+        full_desc = " | ".join(desc_parts)
+        
+        exp_code = f"EXP-{payment_code}"
+        cursor.execute("SELECT id FROM expenses WHERE expense_code = ?", (exp_code,))
+        if cursor.fetchone():
+            exp_code = f"EXP-{payment_code}-{int(datetime.now().timestamp())}"
             
-        log_audit("Worker Payment Recorded", "Payroll", payment_code, f"Payment of ₹{amount} to worker #{worker_id} ({status})", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
+        cursor.execute("""
+            INSERT INTO expenses (expense_code, date, category, description, amount, payment_method, paid_by, reference_id, notes)
+            VALUES (?, ?, 'Worker Salary', ?, ?, ?, 'Owner', ?, ?)
+        """, (exp_code, payment_date, full_desc, total_transaction_amount, payment_method, payment_code, notes))
         
-    return jsonify({"message": f"Payment {payment_code} recorded successfully", "payment_code": payment_code}), 201
+        log_audit("Worker Payment Recorded", "Payroll", payment_code, f"Paid ₹{amount} (+ ₹{extra_amount} extra) to {w_name} [{payment_type}]", user_id=g.user["user_id"], username=g.user["username"], conn=conn)
+        
+    return jsonify({
+        "message": f"Payment {payment_code} recorded successfully",
+        "payment_code": payment_code,
+        "new_status": new_status,
+        "total_paid": total_transaction_amount
+    }), 201

@@ -13,7 +13,7 @@ from database.seed_data import seed
 from routes.auth import auth_bp
 from routes.admin import admin_bp
 from routes.dashboard import dashboard_bp
-from routes.workers import workers_bp, get_attendance, mark_single_attendance, mark_bulk_attendance, get_attendance_stats, get_payments, record_payment
+from routes.workers import workers_bp, get_attendance, mark_single_attendance, mark_bulk_attendance, get_attendance_stats, get_payments, record_payment, get_payroll_overview
 from routes.birds import birds_bp
 from routes.eggs import eggs_bp
 from routes.raw_materials import raw_materials_bp
@@ -41,7 +41,7 @@ app.register_blueprint(finance_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(sync_bp)
 
-# Top-level API aliases for Attendance & Payments
+# Top-level API aliases for Attendance, Payments & Payroll
 @app.route("/api/attendance", methods=["GET", "POST"])
 def api_attendance_alias():
     if request.method == "GET":
@@ -61,6 +61,10 @@ def api_payments_alias():
     if request.method == "GET":
         return get_payments()
     return record_payment()
+
+@app.route("/api/payroll", methods=["GET"])
+def api_payroll_alias():
+    return get_payroll_overview()
 
 @app.route("/")
 def serve_index():

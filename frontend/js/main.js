@@ -4,7 +4,7 @@ import { OfflineSync } from "./offline_sync.js";
 import { showToast, openModal, closeModal, formatDate, formatDateTime } from "./utils.js";
 import { Auth } from "./auth.js";
 import { loadDashboard } from "./dashboard.js";
-import { loadShellComponents, ensureViewLoaded, preloadAllViews, initModalListeners, populateDropdowns, initForms } from "./components.js";
+import { loadComponent, loadShellComponents, ensureViewLoaded, preloadAllViews, initModalListeners, populateDropdowns, initForms } from "./components.js";
 
 // Global App State
 export const State = {
@@ -182,6 +182,9 @@ function renderWorkersTable(workers) {
       </td>
       <td>
         <div style="display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-sm" onclick="window.openMakePayment(${w.id})" title="Make Payment for ${w.name}">
+            💳 Pay
+          </button>
           <button class="btn btn-secondary btn-sm" onclick="window.editWorker(${w.id})" title="Edit Worker Details">
             ✏️ Edit
           </button>
@@ -458,32 +461,493 @@ window.updateAttNotes = async function(workerId, val) {
   // Optional notes edit
 };
 
-// ----------------- VIEW 4: WORKER PAYMENTS ----------------- //
-async function loadPayments() {
-  const data = await Api.get("/api/workers/payments");
-  const tbody = document.querySelector("#tablePayments tbody");
+// ----------------- VIEW 4: DIRECT WORKER PAYROLL & PAYMENTS ----------------- //
+let cachedPayrollWorkers = [];
+
+export async function loadPayments() {
+  const searchInput = document.getElementById("payrollSearchInput");
+  const statusFilter = document.getElementById("payrollStatusFilter");
+  const monthFilter = document.getElementById("payrollMonthFilter");
+
+  // Default month filter to current year-month if empty
+  const today = new Date();
+  const currentMonthIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  if (monthFilter && !monthFilter.value) {
+    monthFilter.value = currentMonthIso;
+  }
+
+  const selectedMonth = monthFilter?.value || currentMonthIso;
+  const selectedStatus = statusFilter?.value || "All";
+  const searchVal = searchInput?.value?.trim() || "";
+
+  const queryParams = new URLSearchParams();
+  if (selectedMonth) queryParams.set("month", selectedMonth);
+  if (selectedStatus && selectedStatus !== "All") queryParams.set("status", selectedStatus);
+  if (searchVal) queryParams.set("search", searchVal);
+
+  try {
+    const data = await Api.get(`/api/workers/payroll?${queryParams.toString()}`);
+    cachedPayrollWorkers = data.payroll || [];
+    const summary = data.summary || {};
+
+    // 1. Update 6 Summary KPI Cards
+    const elWorkers = document.getElementById("payrollSummaryWorkers");
+    if (elWorkers) elWorkers.innerText = summary.total_workers || 0;
+
+    const elDue = document.getElementById("payrollSummarySalaryDue");
+    if (elDue) elDue.innerText = `₹${Number(summary.total_salary_due || 0).toLocaleString()}`;
+
+    const elPaid = document.getElementById("payrollSummaryPaid");
+    if (elPaid) elPaid.innerText = `₹${Number(summary.total_paid || 0).toLocaleString()}`;
+
+    const elPending = document.getElementById("payrollSummaryPending");
+    if (elPending) elPending.innerText = `₹${Number(summary.total_pending || 0).toLocaleString()}`;
+
+    const elAdvance = document.getElementById("payrollSummaryAdvance");
+    if (elAdvance) elAdvance.innerText = `₹${Number(summary.total_advance_paid || 0).toLocaleString()}`;
+
+    const elExtra = document.getElementById("payrollSummaryExtra");
+    if (elExtra) elExtra.innerText = `₹${Number(summary.total_extra_paid || 0).toLocaleString()}`;
+
+    const elPeriod = document.getElementById("payrollSummaryPeriod");
+    if (elPeriod) elPeriod.innerText = `${summary.salary_period || 'Current Cycle'} Cycle`;
+
+    const elBadge = document.getElementById("payrollWorkerCountBadge");
+    if (elBadge) elBadge.innerText = `${cachedPayrollWorkers.length} worker${cachedPayrollWorkers.length === 1 ? '' : 's'}`;
+
+    // 2. Render Payroll Ledger Table
+    const tbody = document.getElementById("payrollTableBody");
+    if (tbody) {
+      if (cachedPayrollWorkers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 2rem; color: var(--text-dim);">No payroll records found for the selected criteria.</td></tr>`;
+      } else {
+        tbody.innerHTML = cachedPayrollWorkers.map(w => {
+          let statusBadgeClass = "info";
+          if (w.payment_status === "Paid") statusBadgeClass = "success";
+          else if (w.payment_status === "Pending") statusBadgeClass = "warning";
+          else if (w.payment_status === "Partially Paid") statusBadgeClass = "info";
+          else if (w.payment_status === "Overpaid") statusBadgeClass = "danger";
+
+          const dueAlert = w.is_payment_due
+            ? `<div style="margin-top: 0.25rem;"><span class="badge danger" style="font-size: 0.72rem;">⚠️ DUE NOW</span></div>`
+            : '';
+
+          const remainingColor = w.remaining_amount > 0 ? "var(--amber-400)" : "var(--primary-400)";
+
+          const advanceDisplay = w.advance_paid > 0
+            ? `<strong style="color: #a855f7;">₹${Number(w.advance_paid).toLocaleString()}</strong> <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 0.7rem;">Advance</span>`
+            : `<span style="color: var(--text-dim);">₹0</span>`;
+
+          const extraDisplay = w.extra_amount_paid > 0
+            ? `<strong style="color: #06b6d4;">₹${Number(w.extra_amount_paid).toLocaleString()}</strong> <span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee; font-size: 0.7rem;">Extra</span>`
+            : `<span style="color: var(--text-dim);">₹0</span>`;
+
+          return `
+            <tr style="${w.is_payment_due ? 'background: rgba(239, 68, 68, 0.04);' : ''}">
+              <td>
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.98rem;">${w.name}</div>
+                <div style="font-size: 0.78rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem;">
+                  <span style="font-family: monospace; font-weight: 600;">${w.worker_code}</span> &bull; 
+                  <span>${w.job_role}</span>
+                </div>
+              </td>
+              <td>
+                <strong>₹${Number(w.regular_salary_due).toLocaleString()}</strong>
+                <div style="font-size: 0.75rem; color: var(--text-dim);">${w.salary_type}</div>
+              </td>
+              <td>
+                <div>${formatDate(w.payment_due_date)}</div>
+                ${dueAlert}
+              </td>
+              <td><strong>₹${Number(w.amount_already_paid).toLocaleString()}</strong></td>
+              <td>${advanceDisplay}</td>
+              <td>${extraDisplay}</td>
+              <td><strong style="color: var(--text-main); font-size: 1.02rem;">₹${Number(w.total_amount_paid).toLocaleString()}</strong></td>
+              <td>
+                <strong style="color: ${remainingColor}; font-size: 1.05rem;">₹${Number(w.remaining_amount).toLocaleString()}</strong>
+              </td>
+              <td>
+                <span class="badge ${statusBadgeClass}">${w.payment_status}</span>
+              </td>
+              <td>
+                <div style="font-size: 0.85rem;">${w.last_payment_date && w.last_payment_date !== '-' ? formatDate(w.last_payment_date) : '-'}</div>
+              </td>
+              <td style="text-align: center;">
+                <div style="display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="window.openMakePayment(${w.worker_id})" title="Make Payment for ${w.name}">
+                    💳 Make Payment
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.viewWorkerPaymentHistory(${w.worker_id})" title="View Payment History">
+                    📜 History
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // 3. Load Global Transactions Log
+    await loadAllPaymentTransactions();
+
+  } catch (err) {
+    console.error("Failed to load payroll:", err);
+    showToast("Error loading payroll data: " + err.message, "error");
+  }
+}
+
+async function loadAllPaymentTransactions() {
+  const tbody = document.getElementById("allPaymentsBody");
   if (!tbody) return;
 
-  const paidEl = document.getElementById("paymentsTotalPaid");
-  if (paidEl) paidEl.innerText = `₹${Number(data.summary.total_paid).toLocaleString()}`;
-  const pendEl = document.getElementById("paymentsTotalPending");
-  if (pendEl) pendEl.innerText = `₹${Number(data.summary.total_pending).toLocaleString()}`;
-  const lastEl = document.getElementById("paymentsLastDate");
-  if (lastEl) lastEl.innerText = data.summary.last_payment_date ? formatDate(data.summary.last_payment_date) : '-';
+  try {
+    const res = await Api.get("/api/workers/payments");
+    const payments = res.payments || [];
+    const countBadge = document.getElementById("allPaymentsCountBadge");
+    if (countBadge) countBadge.innerText = `${payments.length} record${payments.length === 1 ? '' : 's'}`;
 
-  tbody.innerHTML = data.payments.map(p => `
-    <tr>
-      <td><strong>${p.payment_code}</strong></td>
-      <td><strong>${p.worker_name}</strong> (${p.worker_code})</td>
-      <td>${p.salary_period}</td>
-      <td>${formatDate(p.payment_date)}</td>
-      <td><strong>₹${Number(p.amount).toLocaleString()}</strong></td>
-      <td>${p.payment_method}</td>
-      <td><span class="badge ${p.status === 'Paid' ? 'success' : p.status === 'Pending' ? 'warning' : 'info'}">${p.status}</span></td>
-      <td>${p.notes || '-'}</td>
-    </tr>
-  `).join("");
+    if (payments.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No transactions recorded yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = payments.map(p => {
+      const typeBadge = p.payment_type === 'Advance' ? 'warning' : (p.payment_type === 'Extra' || p.payment_type === 'Bonus') ? 'info' : 'success';
+      const baseAmt = Number(p.amount || 0);
+      const extraAmt = Number(p.extra_amount || 0);
+      const totalAmt = baseAmt + extraAmt;
+
+      return `
+        <tr>
+          <td><strong>${p.payment_code}</strong></td>
+          <td>${formatDate(p.payment_date)}</td>
+          <td>
+            <strong>${p.worker_name}</strong> 
+            <span style="font-size: 0.78rem; color: var(--text-dim);">(${p.worker_code})</span>
+          </td>
+          <td><span class="badge ${typeBadge}">${p.payment_type || 'Salary'}</span></td>
+          <td>₹${baseAmt.toLocaleString()}</td>
+          <td>${extraAmt > 0 ? `<span style="color: #06b6d4;">+₹${extraAmt.toLocaleString()}</span>` : '-'}</td>
+          <td><strong style="color: var(--primary-400);">₹${totalAmt.toLocaleString()}</strong></td>
+          <td>${p.payment_method || 'Cash'}</td>
+          <td>
+            <div>${p.notes || '-'}</div>
+            ${p.extra_reason ? `<small style="color: var(--text-dim);">(Reason: ${p.extra_reason})</small>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join("");
+  } catch (err) {
+    console.warn("Could not load global payments:", err);
+  }
 }
+
+// Global Payroll Actions for Window
+window.loadPayments = loadPayments;
+
+window.openMakePayment = async function(workerId = null) {
+  try {
+    let select = document.getElementById("payWorkerSelect");
+    
+    // 1. Ensure modal markup is loaded in DOM
+    if (!select) {
+      await loadComponent("/components/modals.html", "modalsMount");
+      select = document.getElementById("payWorkerSelect");
+    }
+
+    // 2. Ensure payroll workers cache is populated
+    if (!cachedPayrollWorkers || cachedPayrollWorkers.length === 0) {
+      try {
+        const data = await Api.get("/api/workers/payroll");
+        cachedPayrollWorkers = data.payroll || [];
+      } catch (err) {
+        console.warn("Could not load payroll overview for modal:", err);
+      }
+    }
+
+    // 3. Fallback to /api/workers if payroll list was empty
+    if (!cachedPayrollWorkers || cachedPayrollWorkers.length === 0) {
+      try {
+        const wData = await Api.get("/api/workers?status=Active");
+        cachedPayrollWorkers = (wData.workers || []).map(w => ({
+          worker_id: w.id,
+          worker_code: w.worker_code,
+          name: w.name,
+          job_role: w.job_role,
+          salary_type: w.salary_type || "Monthly",
+          regular_salary_due: Number(w.salary_amount || 0),
+          remaining_amount: Number(w.salary_amount || 0),
+          total_amount_paid: 0,
+          payment_due_date: new Date().toISOString().slice(0, 10)
+        }));
+      } catch (err) {
+        console.warn("Could not load workers list:", err);
+      }
+    }
+
+    // 4. Populate worker select options
+    if (select) {
+      select.innerHTML = `<option value="">-- Choose Worker --</option>` + cachedPayrollWorkers.map(w => `
+        <option value="${w.worker_id}" ${w.worker_id == workerId ? 'selected' : ''}>
+          ${w.name} (${w.worker_code}) — Remaining: ₹${Number(w.remaining_amount || 0).toLocaleString()}
+        </option>
+      `).join("");
+      if (workerId) {
+        select.value = String(workerId);
+      }
+    }
+
+    // 5. Pre-fill salary period
+    const monthInput = document.getElementById("payrollMonthFilter");
+    const periodInput = document.getElementById("payPeriod");
+    if (periodInput) {
+      if (monthInput && monthInput.value) {
+        const parts = monthInput.value.split("-");
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+        periodInput.value = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      } else {
+        periodInput.value = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      }
+    }
+
+    // 6. Set payment date default to today
+    const payDateInput = document.getElementById("payDate");
+    if (payDateInput) {
+      payDateInput.value = new Date().toISOString().slice(0, 10);
+    }
+
+    // 7. Reset extra amount & notes
+    const extraInput = document.getElementById("payExtraAmount");
+    if (extraInput) extraInput.value = 0;
+    const notesInput = document.getElementById("payNotes");
+    if (notesInput) notesInput.value = "";
+    const typeSelect = document.getElementById("payTypeSelect");
+    if (typeSelect) typeSelect.value = "Salary";
+    const reasonSelect = document.getElementById("payExtraReason");
+    if (reasonSelect) reasonSelect.value = "";
+
+    // 8. Update ledger info banner
+    window.onPayWorkerSelected();
+
+    // 9. Open modal
+    openModal("modalRecordPayment");
+  } catch (err) {
+    console.error("Error opening make payment modal:", err);
+    showToast("Error opening payment form: " + err.message, "error");
+  }
+};
+
+window.onPayWorkerSelected = function() {
+  const select = document.getElementById("payWorkerSelect");
+  const workerId = parseInt(select?.value);
+  const worker = cachedPayrollWorkers.find(w => w.worker_id === workerId);
+
+  const elDue = document.getElementById("payModalSalaryDue");
+  const elPaid = document.getElementById("payModalAlreadyPaid");
+  const elRem = document.getElementById("payModalRemainingDue");
+  const elDueDate = document.getElementById("payModalDueDate");
+  const amtInput = document.getElementById("payAmount");
+
+  if (worker) {
+    if (elDue) elDue.innerText = `₹${Number(worker.regular_salary_due).toLocaleString()}`;
+    if (elPaid) elPaid.innerText = `₹${Number(worker.total_amount_paid).toLocaleString()}`;
+    if (elRem) elRem.innerText = `₹${Number(worker.remaining_amount).toLocaleString()}`;
+    if (elDueDate) elDueDate.innerText = formatDate(worker.payment_due_date);
+
+    if (amtInput) {
+      amtInput.value = worker.remaining_amount > 0 ? worker.remaining_amount : worker.regular_salary_due;
+    }
+  } else {
+    if (elDue) elDue.innerText = "₹0";
+    if (elPaid) elPaid.innerText = "₹0";
+    if (elRem) elRem.innerText = "₹0";
+    if (elDueDate) elDueDate.innerText = "-";
+    if (amtInput) amtInput.value = "";
+  }
+
+  window.updatePayFormPreview();
+};
+
+window.updatePayFormPreview = function() {
+  const amt = parseFloat(document.getElementById("payAmount")?.value || 0) || 0;
+  const extra = parseFloat(document.getElementById("payExtraAmount")?.value || 0) || 0;
+  const total = amt + extra;
+  const previewEl = document.getElementById("payModalTotalPreview");
+  if (previewEl) {
+    previewEl.innerText = `₹${total.toLocaleString()}`;
+  }
+
+  const select = document.getElementById("payWorkerSelect");
+  const workerId = parseInt(select?.value);
+  const worker = cachedPayrollWorkers.find(w => w.worker_id === workerId);
+  const statusEl = document.getElementById("payModalStatusPreview");
+
+  if (worker && statusEl) {
+    const newEffPaid = (worker.amount_already_paid || 0) + (worker.advance_paid || 0) + amt;
+    let expectedStatus = "Pending";
+    if (newEffPaid >= worker.regular_salary_due) {
+      expectedStatus = newEffPaid > worker.regular_salary_due ? "Overpaid" : "Paid";
+    } else if (newEffPaid > 0) {
+      expectedStatus = "Partially Paid";
+    }
+    const newRem = Math.max(0, worker.regular_salary_due - newEffPaid);
+    statusEl.innerHTML = `Projected Status: <strong>${expectedStatus}</strong> (Remaining: ₹${newRem.toLocaleString()})`;
+  }
+};
+
+window.submitRecordPayment = async function(event) {
+  if (event) event.preventDefault();
+  
+  const select = document.getElementById("payWorkerSelect");
+  const workerId = parseInt(select?.value);
+  const baseAmount = parseFloat(document.getElementById("payAmount")?.value || 0) || 0;
+  const extraAmount = parseFloat(document.getElementById("payExtraAmount")?.value || 0) || 0;
+
+  if (!workerId || isNaN(workerId)) {
+    showToast("Please select a worker to record payment", "warning");
+    return;
+  }
+  if (baseAmount + extraAmount <= 0) {
+    showToast("Please enter a valid payment amount greater than ₹0", "warning");
+    return;
+  }
+
+  const payload = {
+    worker_id: workerId,
+    salary_period: document.getElementById("payPeriod")?.value || new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+    payment_date: document.getElementById("payDate")?.value || new Date().toISOString().slice(0, 10),
+    amount: baseAmount,
+    extra_amount: extraAmount,
+    payment_type: document.getElementById("payTypeSelect")?.value || "Salary",
+    extra_reason: document.getElementById("payExtraReason")?.value || null,
+    payment_method: document.getElementById("payMethodSelect")?.value || "Cash",
+    notes: document.getElementById("payNotes")?.value || ""
+  };
+
+  const btnSubmit = document.getElementById("btnSavePayment");
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = "⏳ Saving...";
+  }
+
+  try {
+    const res = await Api.post("/api/workers/payments", payload);
+    showToast(res.message || "Payment recorded successfully!", "success");
+    closeModal("modalRecordPayment");
+    
+    const form = document.getElementById("formRecordPayment");
+    if (form) form.reset();
+    
+    // Refresh payroll table & stats immediately
+    await loadPayments();
+  } catch (err) {
+    console.error("Payment error:", err);
+    showToast("Payment failed: " + err.message, "error");
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = "💳 Make Payment";
+    }
+  }
+};
+
+window.viewWorkerPaymentHistory = async function(workerId) {
+  try {
+    const res = await Api.get(`/api/workers/${workerId}/payments`);
+    const worker = res.worker || {};
+    const payments = res.payments || [];
+    const stats = res.stats || {};
+
+    const subEl = document.getElementById("historyWorkerSub");
+    if (subEl) {
+      subEl.innerHTML = `<strong>${worker.name}</strong> (${worker.worker_code}) &bull; ${worker.job_role} &bull; Salary: ₹${Number(worker.salary_amount || 0).toLocaleString()} (${worker.salary_type || 'Monthly'})`;
+    }
+
+    const baseEl = document.getElementById("historyBasePaid");
+    if (baseEl) baseEl.innerText = `₹${Number(stats.total_base_paid || 0).toLocaleString()}`;
+    const advEl = document.getElementById("historyAdvancePaid");
+    if (advEl) advEl.innerText = `₹${Number(stats.total_advance_paid || 0).toLocaleString()}`;
+    const extEl = document.getElementById("historyExtraPaid");
+    if (extEl) extEl.innerText = `₹${Number(stats.total_extra_paid || 0).toLocaleString()}`;
+    const totEl = document.getElementById("historyTotalReceived");
+    if (totEl) totEl.innerText = `₹${Number(stats.total_received || 0).toLocaleString()}`;
+
+    const tbody = document.getElementById("historyTableBody");
+    if (tbody) {
+      if (payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No previous payments found for this worker.</td></tr>`;
+      } else {
+        tbody.innerHTML = payments.map(p => {
+          const typeBadge = p.payment_type === 'Advance' ? 'warning' : (p.payment_type === 'Extra' || p.payment_type === 'Bonus') ? 'info' : 'success';
+          const bAmt = Number(p.amount || 0);
+          const eAmt = Number(p.extra_amount || 0);
+          const tAmt = bAmt + eAmt;
+
+          return `
+            <tr>
+              <td>${formatDate(p.payment_date)}</td>
+              <td><strong>${p.payment_code}</strong></td>
+              <td>${p.salary_period || '-'}</td>
+              <td><span class="badge ${typeBadge}">${p.payment_type || 'Salary'}</span></td>
+              <td>₹${bAmt.toLocaleString()}</td>
+              <td>${eAmt > 0 ? `<span style="color: #06b6d4;">+₹${eAmt.toLocaleString()}</span>` : '-'}</td>
+              <td><strong style="color: var(--primary-400);">₹${tAmt.toLocaleString()}</strong></td>
+              <td>${p.payment_method || 'Cash'}</td>
+              <td>
+                <div>${p.notes || '-'}</div>
+                ${p.extra_reason ? `<small style="color: var(--text-dim);">(Reason: ${p.extra_reason})</small>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    const btnPay = document.getElementById("btnHistoryMakePayment");
+    if (btnPay) {
+      btnPay.onclick = () => {
+        closeModal("modalWorkerPaymentHistory");
+        window.openMakePayment(workerId);
+      };
+    }
+
+    openModal("modalWorkerPaymentHistory");
+  } catch (err) {
+    showToast("Error loading payment history: " + err.message, "error");
+  }
+};
+
+window.filterPayroll = function() {
+  loadPayments();
+};
+
+window.resetPayrollFilters = function() {
+  const searchInput = document.getElementById("payrollSearchInput");
+  const statusFilter = document.getElementById("payrollStatusFilter");
+  const monthFilter = document.getElementById("payrollMonthFilter");
+
+  if (searchInput) searchInput.value = "";
+  if (statusFilter) statusFilter.value = "All";
+  if (monthFilter) {
+    const today = new Date();
+    monthFilter.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  }
+  loadPayments();
+};
+
+window.toggleAllPaymentsList = function() {
+  const container = document.getElementById("allPaymentsContainer");
+  const chevron = document.getElementById("allPaymentsChevron");
+  if (!container) return;
+  if (container.style.display === "none") {
+    container.style.display = "block";
+    if (chevron) chevron.innerText = "▼";
+  } else {
+    container.style.display = "none";
+    if (chevron) chevron.innerText = "▶";
+  }
+};
 
 // ----------------- VIEW 5: BIRDS & BATCHES ----------------- //
 async function loadBatches() {
