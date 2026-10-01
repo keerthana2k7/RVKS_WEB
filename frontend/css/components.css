@@ -742,42 +742,123 @@ table.data-table tbody tr:hover {
 }
 
 .alert-banner {
-  padding: 0.9rem 1.25rem;
-  border-radius: var(--radius-md);
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md, 8px);
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 0.9rem;
   border: 1px solid transparent;
   font-size: 0.9rem;
-}
-
-.alert-banner.warning {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.35);
-  color: #fef08a;
-}
-
-.alert-banner.danger {
-  background: var(--danger-bg);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
-
-.alert-banner.info {
-  background: var(--info-bg);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #bfdbfe;
+  transition: all 0.2s ease;
 }
 
 .alert-icon {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-.alert-content strong {
+.alert-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.alert-content strong,
+.alert-banner strong,
+.alert-title {
   display: block;
   font-weight: 700;
-  margin-bottom: 0.15rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.alert-desc {
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* ==================== Warning Alert (High-Contrast Amber/Yellow) ==================== */
+.alert-banner.warning {
+  background: #FFF4D6 !important;
+  border: 1px solid #F4B942 !important;
+  color: #6B4A00 !important;
+}
+
+.alert-banner.warning .alert-icon,
+.alert-banner.warning .alert-icon svg {
+  color: #C77700 !important;
+  stroke: #C77700 !important;
+}
+
+.alert-banner.warning .alert-content strong,
+.alert-banner.warning strong,
+.alert-banner.warning .alert-title {
+  color: #8A5200 !important;
+  font-weight: 700 !important;
+}
+
+.alert-banner.warning .alert-content,
+.alert-banner.warning .alert-desc,
+.alert-banner.warning p {
+  color: #6B4A00 !important;
+}
+
+/* ==================== Danger Alert ==================== */
+.alert-banner.danger {
+  background: #fef2f2 !important;
+  border: 1px solid #f87171 !important;
+  color: #991b1b !important;
+}
+
+.alert-banner.danger .alert-icon,
+.alert-banner.danger .alert-icon svg {
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.alert-banner.danger .alert-content strong,
+.alert-banner.danger strong,
+.alert-banner.danger .alert-title {
+  color: #7f1d1d !important;
+  font-weight: 700 !important;
+}
+
+.alert-banner.danger .alert-content,
+.alert-banner.danger .alert-desc,
+.alert-banner.danger p {
+  color: #991b1b !important;
+}
+
+/* ==================== Info Alert ==================== */
+.alert-banner.info {
+  background: #eff6ff !important;
+  border: 1px solid #60a5fa !important;
+  color: #1e40af !important;
+}
+
+.alert-banner.info .alert-icon,
+.alert-banner.info .alert-icon svg {
+  color: #2563eb !important;
+  stroke: #2563eb !important;
+}
+
+.alert-banner.info .alert-content strong,
+.alert-banner.info strong,
+.alert-banner.info .alert-title {
+  color: #1e3a8a !important;
+  font-weight: 700 !important;
+}
+
+.alert-banner.info .alert-content,
+.alert-banner.info .alert-desc,
+.alert-banner.info p {
+  color: #1e40af !important;
 }
 
 /* ==================== 11. Footer ==================== */

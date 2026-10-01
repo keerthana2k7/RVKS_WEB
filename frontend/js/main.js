@@ -3,7 +3,7 @@ import { Api } from "./api.js";
 import { OfflineSync } from "./offline_sync.js";
 import { showToast, openModal, closeModal, formatDate, formatDateTime } from "./utils.js";
 import { Auth } from "./auth.js";
-import { loadDashboard } from "./dashboard.js";
+import { loadDashboard } from "./dashboard.js?v=20261001_8";
 import { loadComponent, loadShellComponents, ensureViewLoaded, preloadAllViews, initModalListeners, populateDropdowns, initForms } from "./components.js";
 
 // Global App State
